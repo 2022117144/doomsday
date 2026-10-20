@@ -935,8 +935,8 @@ if os.path.exists(web_dir):
     def index():
         return FileResponse(os.path.join(web_dir, "index.html"))
 
-    @app.get("/SHA256SUMS.txt")
-    @app.get("/download/SHA256SUMS.txt")
+    @app.api_route("/SHA256SUMS.txt", methods=["GET", "HEAD"])
+    @app.api_route("/download/SHA256SUMS.txt", methods=["GET", "HEAD"])
     def get_checksums():
         sums_file = os.path.join(web_dir, "SHA256SUMS.txt")
         if os.path.exists(sums_file):
@@ -946,26 +946,26 @@ if os.path.exists(web_dir):
             return FileResponse(root_sums, media_type="text/plain")
         raise HTTPException(status_code=404, detail="SHA256SUMS.txt not found")
 
-    @app.get("/docs")
-    @app.get("/whitepaper")
+    @app.api_route("/docs", methods=["GET", "HEAD"])
+    @app.api_route("/whitepaper", methods=["GET", "HEAD"])
     def get_docs():
         return FileResponse(os.path.join(web_dir, "docs.html"))
 
-    @app.get("/wallet")
+    @app.api_route("/wallet", methods=["GET", "HEAD"])
     def get_wallet_page():
         return FileResponse(os.path.join(web_dir, "wallet.html"))
 
-    @app.get("/install.sh")
+    @app.api_route("/install.sh", methods=["GET", "HEAD"])
     def get_install_script():
         script_path = os.path.join(web_dir, "install.sh")
         return FileResponse(script_path, media_type="text/x-shellscript")
 
-    @app.get("/download/desktop")
-    @app.get("/download/latest")
-    @app.get("/download/Doomsday-Windows-x64.zip")
-    @app.get("/download/Doomsday-v1.0.2-windows-x64.zip")
-    @app.get("/download/Doomsday-v1.0.1-windows-x64.zip")
-    @app.get("/download/Doomsday-v1.0.0-windows-x64.zip")
+    @app.api_route("/download/desktop", methods=["GET", "HEAD"])
+    @app.api_route("/download/latest", methods=["GET", "HEAD"])
+    @app.api_route("/download/Doomsday-Windows-x64.zip", methods=["GET", "HEAD"])
+    @app.api_route("/download/Doomsday-v1.0.2-windows-x64.zip", methods=["GET", "HEAD"])
+    @app.api_route("/download/Doomsday-v1.0.1-windows-x64.zip", methods=["GET", "HEAD"])
+    @app.api_route("/download/Doomsday-v1.0.0-windows-x64.zip", methods=["GET", "HEAD"])
     def download_windows_miner():
         candidates = [
             os.path.join(web_dir, "Doomsday-v1.0.0-Windows-x64.zip"),

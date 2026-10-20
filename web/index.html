@@ -486,11 +486,65 @@
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button onclick="toggleDexChart()" id="btn-toggle-chart" style="background: rgba(0, 255, 136, 0.12); border: 1px solid rgba(0, 255, 136, 0.4); color: #00ff88; padding: 6px 14px; font-size: 12px;">📈 Show Live Embedded Chart</button>
+          <a href="https://basescan.org/tx/0x0443cdb07aa02c45109858fa626a4d93c30c684ff882abd2ce5fe4c675fd67ed" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.08);">🔒 100% LP Burned (0x...dEaD)</a>
           <a href="https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.3);">✓ BaseScan Verified</a>
         </div>
       </div>
       <div id="dex-chart-container" style="display: none; width: 100%; height: 460px; border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border);">
         <iframe id="dex-chart-iframe" src="" style="width: 100%; height: 100%; border: 0;" allowfullscreen></iframe>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE GPU IDLE EARNINGS CALCULATOR -->
+    <div class="wallet-box" style="margin-bottom: 36px; flex-direction: column; align-items: stretch; gap: 16px; border-color: rgba(255, 153, 0, 0.28);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <div style="font-weight: 800; font-size: 15px; color: #fff;">⚡ GPU Idle Mining Reward Estimator</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Estimate how much DOOM your gaming GPU mines while you sleep or step away from your desk</div>
+        </div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); background: rgba(255, 153, 0, 0.1); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255, 153, 0, 0.3);">50 DOOM / Block • 20s Target</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: end;">
+        <div>
+          <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 6px;">Select Your NVIDIA GPU</label>
+          <select id="calc-gpu-select" onchange="updateEarningsCalculator()" style="width: 100%; background: #09090b; color: #fff; border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+            <option value="9500">NVIDIA RTX 5090 (~9,500 MH/s)</option>
+            <option value="6900" selected>NVIDIA RTX 5080 (~6,900 MH/s)</option>
+            <option value="8200">NVIDIA RTX 4090 (~8,200 MH/s)</option>
+            <option value="5800">NVIDIA RTX 4080 Super (~5,800 MH/s)</option>
+            <option value="4200">NVIDIA RTX 4070 Ti / Super (~4,200 MH/s)</option>
+            <option value="2630">NVIDIA RTX 4060 Ti / 4060 (~2,630 MH/s)</option>
+            <option value="3900">NVIDIA RTX 3080 / 3090 (~3,900 MH/s)</option>
+            <option value="2100">NVIDIA RTX 3060 / 3070 (~2,100 MH/s)</option>
+          </select>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Idle Hours Per Day</label>
+            <span id="calc-hours-label" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent);">12 hrs / day</span>
+          </div>
+          <input type="range" id="calc-hours-slider" min="1" max="24" value="12" oninput="updateEarningsCalculator()" style="width: 100%; accent-color: var(--primary); cursor: pointer;" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Your Share of Network</div>
+          <div id="calc-share-val" style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Daily DOOM</div>
+          <div id="calc-daily-doom" style="font-size: 18px; font-weight: 800; color: var(--green); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Daily Value (USD)</div>
+          <div id="calc-daily-usd" style="font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Monthly DOOM</div>
+          <div id="calc-monthly-doom" style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+        </div>
       </div>
     </div>
 
@@ -1165,6 +1219,44 @@
       }
     }
 
+    let liveDexPriceUsd = 0.00005529;
+    let liveNetworkMhs = 2630.0;
+
+    function updateEarningsCalculator() {
+      const gpuSelect = document.getElementById('calc-gpu-select');
+      const hoursSlider = document.getElementById('calc-hours-slider');
+      const hoursLabel = document.getElementById('calc-hours-label');
+      if (!gpuSelect || !hoursSlider) return;
+
+      const userMhs = parseFloat(gpuSelect.value) || 2630;
+      const idleHours = parseFloat(hoursSlider.value) || 12;
+      if (hoursLabel) hoursLabel.innerText = `${idleHours} hr${idleHours === 1 ? '' : 's'} / day`;
+
+      const currentNetText = (document.getElementById('val-hashrate') || {}).innerText || '';
+      const parsedNet = parseFloat(currentNetText.replace(/[^0-9.]/g, ''));
+      const netMhs = parsedNet > 0 ? parsedNet : liveNetworkMhs;
+
+      // Share when actively mining alongside current network
+      const totalMhsWhenActive = netMhs + userMhs;
+      const shareRatio = userMhs / totalMhsWhenActive;
+      const sharePct = (shareRatio * 100).toFixed(1);
+
+      // 20s block target = 180 blocks/hour * 50 DOOM = 9,000 DOOM emitted per hour
+      const dailyDoom = Math.round(shareRatio * 9000 * idleHours);
+      const monthlyDoom = dailyDoom * 30;
+      const dailyUsd = (dailyDoom * liveDexPriceUsd).toFixed(2);
+
+      const shareEl = document.getElementById('calc-share-val');
+      const dailyDoomEl = document.getElementById('calc-daily-doom');
+      const dailyUsdEl = document.getElementById('calc-daily-usd');
+      const monthlyDoomEl = document.getElementById('calc-monthly-doom');
+
+      if (shareEl) shareEl.innerText = `${sharePct}% (${userMhs.toLocaleString()} MH/s)`;
+      if (dailyDoomEl) dailyDoomEl.innerText = `~${dailyDoom.toLocaleString()} DOOM`;
+      if (dailyUsdEl) dailyUsdEl.innerText = `~$${dailyUsd} USD / day`;
+      if (monthlyDoomEl) monthlyDoomEl.innerText = `~${monthlyDoom.toLocaleString()} DOOM`;
+    }
+
     async function fetchDexMarket() {
       try {
         const res = await fetch('https://api.dexscreener.com/latest/dex/pairs/base/0xf7217329574249d7b389404aECF2C582662F3659');
@@ -1173,8 +1265,9 @@
         if (!pair) return;
         const priceEl = document.getElementById('dex-price-badge');
         const changeEl = document.getElementById('dex-change-badge');
-        if (priceEl && pair.priceUsd) {
-          priceEl.innerText = `$${pair.priceUsd} USD`;
+        if (pair.priceUsd) {
+          liveDexPriceUsd = parseFloat(pair.priceUsd) || liveDexPriceUsd;
+          if (priceEl) priceEl.innerText = `$${pair.priceUsd} USD`;
         }
         if (changeEl) {
           const chg = pair.priceChange && pair.priceChange.h24 !== undefined ? Number(pair.priceChange.h24) : 0;
@@ -1183,6 +1276,7 @@
           const sign = chg >= 0 ? '+' : '';
           changeEl.innerText = `24h: ${sign}${chg}% • Liquidity: $${liq} • 24h Swaps: ${txns}`;
         }
+        updateEarningsCalculator();
       } catch (e) {}
     }
 
@@ -1210,11 +1304,13 @@
     fetchPoolStats();
     fetchPeers();
     fetchDexMarket();
+    updateEarningsCalculator();
     connectWS();
     setInterval(fetchStatus, 3000);
     setInterval(fetchPoolStats, 5000);
     setInterval(fetchPeers, 6000);
     setInterval(fetchDexMarket, 15000);
+    setInterval(updateEarningsCalculator, 5000);
   </script>
 </body>
 </html>

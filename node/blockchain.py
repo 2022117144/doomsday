@@ -92,16 +92,18 @@ class Blockchain:
         idx = max(0, len(self.blocks) - 10)
         return self.blocks[idx]
 
-    def get_next_bits(self) -> int:
+    def get_next_bits(self, current_timestamp: Optional[int] = None) -> int:
         if len(self.blocks) <= 1:
             return INITIAL_BITS
-        return calculate_next_bits(self.get_tip(), self.get_anchor_block())
+        now_ts = current_timestamp if current_timestamp is not None else int(time.time())
+        return calculate_next_bits(self.get_tip(), self.get_anchor_block(), current_timestamp=now_ts)
 
     def create_block_template(self, miner_address: str) -> Dict[str, Any]:
         """Generate a complete mining job template for worker rigs."""
         tip = self.get_tip()
         height = tip.height + 1
-        bits = self.get_next_bits()
+        now_ts = max(tip.header.timestamp + 1, int(time.time()))
+        bits = self.get_next_bits(current_timestamp=now_ts)
         target = bits_to_target(bits)
         reward = get_block_reward(height)
 
@@ -136,7 +138,6 @@ class Blockchain:
 
         all_txs = [coinbase] + valid_txs
         merkle = calculate_merkle_root(all_txs)
-        now_ts = max(tip.header.timestamp + 1, int(time.time()))
 
         header = BlockHeader(
             version=1,
@@ -241,7 +242,7 @@ class Blockchain:
         if block.header.prev_hash != tip.hash:
             return False, f"Parent hash mismatch: expected {tip.hash[:16]}..., got {block.header.prev_hash[:16]}..."
 
-        expected_bits = self.get_next_bits()
+        expected_bits = self.get_next_bits(current_timestamp=block.header.timestamp)
         ok, reason = validate_block(block, tip, self.utxo_set, expected_bits=expected_bits)
         if not ok:
             return False, f"Consensus check failed: {reason}"

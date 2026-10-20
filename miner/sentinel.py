@@ -405,8 +405,6 @@ class IdleSentinelMiner:
                     )
                     if res.get("block_solved"):
                         current_job = None
-                    else:
-                        current_nonce = winning_nonce + 1
                 else:
                     print(f"\n[Sentinel] Solution found! Nonce: {winning_nonce}")
                     self.submit_solution(

@@ -107,12 +107,11 @@ __global__ void doom_mine_kernel(
     uint64_t start_nonce,
     uint32_t total_nonces,
     uint64_t target_high,
-    uint32_t* d_found,
+    uint64_t* d_best_hash,
     uint64_t* d_winning_nonce
 ) {
     uint64_t tid = (uint64_t)blockDim.x * blockIdx.x + threadIdx.x;
     if (tid >= total_nonces) return;
-    if (*d_found != 0) return;
 
     uint64_t nonce = start_nonce + tid;
 
@@ -147,9 +146,11 @@ __global__ void doom_mine_kernel(
         hash_high = (hash_high << 8) | hash_out[k];
     }
 
-    if (hash_high < target_high) {
-        atomicExch(d_found, 1);
-        atomicExch((unsigned long long*)d_winning_nonce, (unsigned long long)nonce);
+    if (hash_high < *d_best_hash) {
+        unsigned long long prev = atomicMin((unsigned long long*)d_best_hash, (unsigned long long)hash_high);
+        if (hash_high < prev) {
+            atomicExch((unsigned long long*)d_winning_nonce, (unsigned long long)nonce);
+        }
     }
 }
 
@@ -272,7 +273,7 @@ class CUDASolver:
         # Allocate reusable device buffers
         self.d_found = ctypes.c_void_p()
         self.d_nonce = ctypes.c_void_p()
-        self.cuda.cuMemAlloc_v2(ctypes.byref(self.d_found), 4)
+        self.cuda.cuMemAlloc_v2(ctypes.byref(self.d_found), 8)
         self.cuda.cuMemAlloc_v2(ctypes.byref(self.d_nonce), 8)
 
     def _compile_kernel(self):
@@ -310,10 +311,10 @@ class CUDASolver:
         Executes a batch of nonces on the GPU.
         Returns: (found: bool, winning_nonce: int, hashes_per_second: float)
         """
-        # Clear found flag
-        zero32 = ctypes.c_uint32(0)
+        # Initialize d_best_hash to target_high so only hashes < target_high win
+        init_best = ctypes.c_uint64(target_high)
         zero64 = ctypes.c_uint64(0)
-        self.cuda.cuMemcpyHtoD_v2(self.d_found, ctypes.byref(zero32), 4)
+        self.cuda.cuMemcpyHtoD_v2(self.d_found, ctypes.byref(init_best), 8)
         self.cuda.cuMemcpyHtoD_v2(self.d_nonce, ctypes.byref(zero64), 8)
 
         threads_per_block = 256
@@ -347,12 +348,12 @@ class CUDASolver:
         elapsed = max(1e-6, t1 - t0)
         hashrate = batch_size / elapsed
 
-        found_val = ctypes.c_uint32(0)
+        best_hash_val = ctypes.c_uint64(target_high)
         winning_nonce = ctypes.c_uint64(0)
-        self.cuda.cuMemcpyDtoH_v2(ctypes.byref(found_val), self.d_found, 4)
+        self.cuda.cuMemcpyDtoH_v2(ctypes.byref(best_hash_val), self.d_found, 8)
         self.cuda.cuMemcpyDtoH_v2(ctypes.byref(winning_nonce), self.d_nonce, 8)
 
-        is_found = (found_val.value != 0)
+        is_found = (best_hash_val.value < target_high)
         return is_found, winning_nonce.value, hashrate
 
     def close(self):

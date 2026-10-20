@@ -18,7 +18,7 @@ def get_block_reward(height: int) -> int:
     return INITIAL_REWARD_SPARKS >> halvings
 
 
-def calculate_next_bits(prev_block: Block, anchor_block: Block) -> int:
+def calculate_next_bits(prev_block: Block, anchor_block: Block, current_timestamp: Optional[int] = None) -> int:
     """
     ASERT (Absolutely Scheduled Exponentially-Rising Targets) per-block retargeting.
     
@@ -26,6 +26,12 @@ def calculate_next_bits(prev_block: Block, anchor_block: Block) -> int:
     Target_next = Target_anchor * 2^((t - t_anchor - (h - h_anchor) * T) / tau)
     """
     if prev_block.height < 1:
+        return INITIAL_BITS
+
+    # Emergency Difficulty Adjustment (EDA) / Idle-Chain Recovery:
+    # If no block has been mined for > 2 half-lives (8 minutes) because all idle rigs paused,
+    # relax difficulty back to INITIAL_BITS so returning idle GPUs can immediately resume the chain.
+    if current_timestamp is not None and (current_timestamp - prev_block.header.timestamp) > (ASERT_HALF_LIFE * 2):
         return INITIAL_BITS
 
     time_delta = prev_block.header.timestamp - anchor_block.header.timestamp

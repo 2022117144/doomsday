@@ -450,12 +450,15 @@
             <span>⬇️ Download Windows Desktop App (Latest)</span>
           </a>
           <a href="https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659" class="btn-hero-secondary" style="border-color: rgba(0, 255, 136, 0.4); color: #00ff88;" target="_blank">
-            <span>📈 Live Candlestick Chart</span>
+            <span>📈 DexScreener Chart</span>
+          </a>
+          <a href="https://www.geckoterminal.com/base/pools/0xf7217329574249d7b389404aecf2c582662f3659" class="btn-hero-secondary" style="border-color: rgba(139, 195, 74, 0.4); color: #a3e635;" target="_blank">
+            <span>🦎 GeckoTerminal</span>
           </a>
           <a href="https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E" class="btn-hero-secondary" style="border-color: rgba(255, 0, 122, 0.4); color: #ff007a;" target="_blank">
             <span>🦄 Swap on Uniswap</span>
           </a>
-          <a href="https://github.com/doomsday-network/doomsday" class="btn-hero-secondary" target="_blank">
+          <a href="https://github.com/freez111/doomsday-network" class="btn-hero-secondary" target="_blank">
             <span>🐙 GitHub Repository</span>
           </a>
           <div class="hero-meta">
@@ -467,9 +470,27 @@
         <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
           <span style="font-size: 12px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace;">🐧 LINUX / HIVEOS RIG SETUP:</span>
           <div style="background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #fff; user-select: all;">
-            git clone https://github.com/doomsday-network/doomsday.git &amp;&amp; cd doomsday &amp;&amp; bash web/install.sh --wallet YOUR_DOOM_ADDRESS
+            git clone https://github.com/freez111/doomsday-network.git &amp;&amp; cd doomsday-network &amp;&amp; bash web/install.sh --wallet YOUR_DOOM_ADDRESS
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- LIVE BASE L2 MARKET & EMBEDDED DEX CHART -->
+    <div class="wallet-box" style="margin-bottom: 36px; flex-direction: column; align-items: stretch; gap: 16px; border-color: rgba(0, 255, 136, 0.25);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span style="font-weight: 800; font-size: 15px; color: #fff;">📊 wDOOM / WETH Live Market (Base Mainnet)</span>
+          <span id="dex-price-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--green); background: rgba(16, 185, 129, 0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">Loading Price...</span>
+          <span id="dex-change-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"></span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button onclick="toggleDexChart()" id="btn-toggle-chart" style="background: rgba(0, 255, 136, 0.12); border: 1px solid rgba(0, 255, 136, 0.4); color: #00ff88; padding: 6px 14px; font-size: 12px;">📈 Show Live Embedded Chart</button>
+          <a href="https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.3);">✓ BaseScan Verified</a>
+        </div>
+      </div>
+      <div id="dex-chart-container" style="display: none; width: 100%; height: 460px; border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border);">
+        <iframe id="dex-chart-iframe" src="" style="width: 100%; height: 100%; border: 0;" allowfullscreen></iframe>
       </div>
     </div>
 
@@ -1144,16 +1165,56 @@
       }
     }
 
+    async function fetchDexMarket() {
+      try {
+        const res = await fetch('https://api.dexscreener.com/latest/dex/pairs/base/0xf7217329574249d7b389404aECF2C582662F3659');
+        const data = await res.json();
+        const pair = (data.pairs && data.pairs[0]) || data.pair;
+        if (!pair) return;
+        const priceEl = document.getElementById('dex-price-badge');
+        const changeEl = document.getElementById('dex-change-badge');
+        if (priceEl && pair.priceUsd) {
+          priceEl.innerText = `$${pair.priceUsd} USD`;
+        }
+        if (changeEl) {
+          const chg = pair.priceChange && pair.priceChange.h24 !== undefined ? Number(pair.priceChange.h24) : 0;
+          const liq = pair.liquidity && pair.liquidity.usd !== undefined ? Number(pair.liquidity.usd).toFixed(2) : '0.00';
+          const txns = pair.txns && pair.txns.h24 ? (Number(pair.txns.h24.buys || 0) + Number(pair.txns.h24.sells || 0)) : 0;
+          const sign = chg >= 0 ? '+' : '';
+          changeEl.innerText = `24h: ${sign}${chg}% • Liquidity: $${liq} • 24h Swaps: ${txns}`;
+        }
+      } catch (e) {}
+    }
+
+    function toggleDexChart() {
+      const container = document.getElementById('dex-chart-container');
+      const iframe = document.getElementById('dex-chart-iframe');
+      const btn = document.getElementById('btn-toggle-chart');
+      if (!container || !iframe) return;
+      if (container.style.display === 'none') {
+        if (!iframe.src || iframe.src === window.location.href) {
+          iframe.src = 'https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659?embed=1&theme=dark&trades=0&info=0';
+        }
+        container.style.display = 'block';
+        if (btn) btn.innerText = '🔼 Hide Embedded Chart';
+      } else {
+        container.style.display = 'none';
+        if (btn) btn.innerText = '📈 Show Live Embedded Chart';
+      }
+    }
+
     // Initial load
     fetchStatus();
     fetchBlocks();
     fetchFaucetInfo();
     fetchPoolStats();
     fetchPeers();
+    fetchDexMarket();
     connectWS();
     setInterval(fetchStatus, 3000);
     setInterval(fetchPoolStats, 5000);
     setInterval(fetchPeers, 6000);
+    setInterval(fetchDexMarket, 15000);
   </script>
 </body>
 </html>

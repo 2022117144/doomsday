@@ -28,14 +28,11 @@ def calculate_next_bits(prev_block: Block, anchor_block: Block, current_timestam
     if prev_block.height < 1:
         return INITIAL_BITS
 
-    # Emergency Difficulty Adjustment (EDA) / Idle-Chain Recovery:
-    # If no block has been mined for > 2 half-lives (8 minutes) because all idle rigs paused,
-    # relax difficulty back to INITIAL_BITS so returning idle GPUs can immediately resume the chain.
-    if current_timestamp is not None and (current_timestamp - prev_block.header.timestamp) > (ASERT_HALF_LIFE * 2):
-        return INITIAL_BITS
+    effective_ts = current_timestamp if current_timestamp is not None else prev_block.header.timestamp
+    effective_height = prev_block.height + (1 if current_timestamp is not None else 0)
 
-    time_delta = prev_block.header.timestamp - anchor_block.header.timestamp
-    height_delta = prev_block.height - anchor_block.height
+    time_delta = effective_ts - anchor_block.header.timestamp
+    height_delta = effective_height - anchor_block.height
     expected_time = height_delta * TARGET_BLOCK_TIME
 
     # Drift in seconds ahead or behind schedule
@@ -44,8 +41,9 @@ def calculate_next_bits(prev_block: Block, anchor_block: Block, current_timestam
     # Exponent for smooth 2^(drift / half_life)
     exponent = drift / float(ASERT_HALF_LIFE)
 
-    # Bound exponent to prevent numerical overflow in extreme conditions
-    exponent = max(-3.0, min(3.0, exponent))
+    # Bound exponent: allow up to 256x difficulty increase (-8.0) against mega-miner bursts,
+    # and up to 65536x relaxation (+16.0, clamped to MAX_TARGET) when idle rigs pause.
+    exponent = max(-8.0, min(16.0, exponent))
 
     anchor_target = bits_to_target(anchor_block.header.bits)
     factor = math.pow(2.0, exponent)
@@ -150,6 +148,9 @@ def validate_block(
             return False, f"Broken chain: prev_hash does not match parent block"
         if block.header.timestamp <= prev_block.header.timestamp:
             return False, "Block timestamp must be greater than parent timestamp"
+        import time as _time
+        if block.header.timestamp > int(_time.time()) + 60:
+            return False, "Block timestamp is too far in the future (max +60s drift allowed)"
 
     # 5. Check Merkle Root
     merkle = calculate_merkle_root(block.transactions)

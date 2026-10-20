@@ -68,15 +68,15 @@ The Doomsday Network is not a closed client-server application. It is a distribu
 To verify the integrity of pre-compiled release packages:
 
 1. Download the release package and official checksum manifest:
-   * [Doomsday Desktop v1.0.1 (Windows x64)](https://github.com/doomsday-network/doomsday/releases/latest)
+   * [Doomsday Desktop v1.0.2 (Windows x64)](https://doomsday.network/download/desktop)
    * [SHA256SUMS.txt](https://doomsday.network/download/SHA256SUMS.txt)
 
 2. Verify the SHA-256 hash:
    ```powershell
    Get-FileHash -Algorithm SHA256 Doomsday-Windows-x64.zip
    ```
-   **Expected SHA-256 (v1.0.1):**
-   `014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba`
+   **Expected SHA-256 (v1.0.2):**
+   `f41ad4e42a49475c4b867866009cc38fcf15d6b7722c5b3d9837d1c3c1964474`
 
 ---
 

@@ -2,6 +2,7 @@
 # Verify with: sha256sum -c SHA256SUMS.txt (Linux/macOS)
 # Or: Get-FileHash -Algorithm SHA256 <file> (Windows PowerShell)
 
-014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba  Doomsday-Windows-x64.zip
+f41ad4e42a49475c4b867866009cc38fcf15d6b7722c5b3d9837d1c3c1964474  Doomsday-Windows-x64.zip
+f41ad4e42a49475c4b867866009cc38fcf15d6b7722c5b3d9837d1c3c1964474  Doomsday-v1.0.2-Windows-x64.zip
 014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba  Doomsday-v1.0.1-Windows-x64.zip
 e629be9a812d7c25395dfa56d6f784ea5ba01fe05c0dff1d1579a50241d1205e  Doomsday-v1.0.0-Windows-x64.zip

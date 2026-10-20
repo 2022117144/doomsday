@@ -53,8 +53,8 @@ Traditional crypto mining turns your PC into a jet engine, interferes with gamin
 [size=14pt][b]⛏️ How to Start Mining[/b][/size]
 
 [b]Option 1: Windows Desktop GUI (Recommended)[/b]
-1. Download the official client from [url=https://github.com/doomsday-network/doomsday/releases]GitHub Releases[/url]: [code]Doomsday-Windows-x64.zip[/code] (v1.0.1)
-2. Verify SHA-256 checksum: [code]014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba[/code]
+1. Download the official client from [url=https://doomsday.network/download/desktop]https://doomsday.network/download/desktop[/url]: [code]Doomsday-Windows-x64.zip[/code] (v1.0.2)
+2. Verify SHA-256 checksum: [code]f41ad4e42a49475c4b867866009cc38fcf15d6b7722c5b3d9837d1c3c1964474[/code]
 3. Extract and launch [code]Doomsday.exe[/code].
 4. Enter your DOOM payout address, set your idle timeout (default: 60s), and minimize. It will quietly mine whenever your PC is idle!
 

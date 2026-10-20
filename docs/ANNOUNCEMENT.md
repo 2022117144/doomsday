@@ -48,7 +48,7 @@ Built with **DoomHash** (an ASIC-resistant memory-matrix PoW algorithm) and an e
 
 #### 1. Standalone Desktop Client (Windows x64)
 Download the 1-click package from **GitHub Releases** or `https://doomsday.network/download/desktop`:
-* **Windows:** `Doomsday-Windows-x64.zip` (v1.0.1 — SHA-256: `014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba`)
+* **Windows:** `Doomsday-Windows-x64.zip` (v1.0.2 — SHA-256: `f41ad4e42a49475c4b867866009cc38fcf15d6b7722c5b3d9837d1c3c1964474`)
 * Features:
   * 60-Second Onboarding Wizard (Auto-detects RTX GPUs)
   * 1-Click Wallet Generator

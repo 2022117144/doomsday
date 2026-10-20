@@ -975,7 +975,7 @@ if os.path.exists(web_dir):
             if os.path.exists(p):
                 return FileResponse(p, filename="Doomsday-Windows-x64.zip", media_type="application/zip")
         return RedirectResponse(
-            url="https://github.com/doomsday-network/doomsday/releases/download/v1.0.2/Doomsday-Windows-x64.zip",
+            url="https://github.com/doomsday-network/doomsday/releases/latest/download/Doomsday-Windows-x64.zip",
             status_code=302
         )
 
@@ -985,7 +985,7 @@ if os.path.exists(web_dir):
             "version": "1.0.2",
             "tag_name": "v1.0.2",
             "name": "Doomsday Network v1.0.2 - Base Mainnet Bridge, Auto Pool Payouts & Consensus Hardening",
-            "download_url": "https://github.com/doomsday-network/doomsday/releases/download/v1.0.2/Doomsday-Windows-x64.zip",
+            "download_url": "https://doomsday.network/download/desktop",
             "release_url": "https://github.com/doomsday-network/doomsday/releases/latest",
             "release_notes": "Base Mainnet & Security Hardening:\n- 1-Click Bridge to Base Mainnet (wDOOM) & Live DexScreener Chart integration\n- Zero-dependency native Node.js secp256k1 wallet generator\n- Live pending mining pool balance indicator (+Pool) with automatic on-chain payouts\n- Full ECDSA input signature verification & mempool double-spend protection."
         }

@@ -2,7 +2,7 @@
 
 > *"Doomsday Clock: 90 seconds to midnight. When the world goes dark, the silent silicon awakens."*
 
-[![Release](https://img.shields.io/github/v/release/doomsday-network/doomsday?color=orange&label=Desktop%20App%20v1.0.1)](https://github.com/doomsday-network/doomsday/releases/latest)
+[![Release](https://img.shields.io/github/v/release/doomsday-network/doomsday?color=orange&label=Desktop%20App%20v1.0.2)](https://github.com/doomsday-network/doomsday/releases/latest)
 [![Security Policy](https://img.shields.io/badge/Security-Non--Custodial%20Audited-brightgreen.svg)](SECURITY.md)
 [![Base Mainnet](https://img.shields.io/badge/Base%20Mainnet-wDOOM%20Verified-0052FF.svg)](https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code)
 [![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%20x64-blue.svg)](https://github.com/doomsday-network/doomsday/releases/latest)
@@ -29,7 +29,7 @@
 
 The easiest way to join the network and mine DOOM is using the official standalone desktop client.
 
-👉 **[Download Doomsday Desktop v1.0.1 for Windows (x64)](https://github.com/doomsday-network/doomsday/releases/latest)**
+👉 **[Download Doomsday Desktop v1.0.2 for Windows (x64)](https://github.com/doomsday-network/doomsday/releases/latest)**
 
 ### ⏱️ 60-Second Out-Of-The-Box Experience (OOBE)
 

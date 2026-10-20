@@ -963,6 +963,7 @@ if os.path.exists(web_dir):
     @app.get("/download/desktop")
     @app.get("/download/latest")
     @app.get("/download/Doomsday-Windows-x64.zip")
+    @app.get("/download/Doomsday-v1.0.2-windows-x64.zip")
     @app.get("/download/Doomsday-v1.0.1-windows-x64.zip")
     @app.get("/download/Doomsday-v1.0.0-windows-x64.zip")
     def download_windows_miner():
@@ -974,19 +975,19 @@ if os.path.exists(web_dir):
             if os.path.exists(p):
                 return FileResponse(p, filename="Doomsday-Windows-x64.zip", media_type="application/zip")
         return RedirectResponse(
-            url="https://github.com/doomsday-network/doomsday/releases/download/v1.0.1/Doomsday-Windows-x64.zip",
+            url="https://github.com/doomsday-network/doomsday/releases/download/v1.0.2/Doomsday-Windows-x64.zip",
             status_code=302
         )
 
     @app.get("/api/version")
     def get_version_info():
         return {
-            "version": "1.0.1",
-            "tag_name": "v1.0.1",
-            "name": "Doomsday Network v1.0.1 - Security & System Tray Hardening Release",
-            "download_url": "https://github.com/doomsday-network/doomsday/releases/download/v1.0.1/Doomsday-Windows-x64.zip",
+            "version": "1.0.2",
+            "tag_name": "v1.0.2",
+            "name": "Doomsday Network v1.0.2 - Base Mainnet Bridge, Auto Pool Payouts & Consensus Hardening",
+            "download_url": "https://github.com/doomsday-network/doomsday/releases/download/v1.0.2/Doomsday-Windows-x64.zip",
             "release_url": "https://github.com/doomsday-network/doomsday/releases/latest",
-            "release_notes": "Security & Ergonomics Hardening:\n- Automatic keystore persistence with mandatory private key backup confirmation\n- Windows system tray minimization with live telemetry tooltip\n- Close-to-tray idle vigil mode\n- Silent Windows startup support (--hidden)\n- Child process error trapping preventing unhandled exceptions\n- DOM XSS sanitization and P2P wire payload bounds."
+            "release_notes": "Base Mainnet & Security Hardening:\n- 1-Click Bridge to Base Mainnet (wDOOM) & Live DexScreener Chart integration\n- Zero-dependency native Node.js secp256k1 wallet generator\n- Live pending mining pool balance indicator (+Pool) with automatic on-chain payouts\n- Full ECDSA input signature verification & mempool double-spend protection."
         }
 
 

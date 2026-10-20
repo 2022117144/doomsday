@@ -434,9 +434,27 @@ async def p2p_handshake(req: P2PHandshakeRequest, request: Request):
     }
 
 
+def _mask_peer_address(addr: str) -> str:
+    """Redact the last two octets of IPv4 peer addresses to protect node operator OpSec."""
+    host, _, port = addr.rpartition(":")
+    if not host:
+        host, port = addr, "8334"
+    parts = host.split(".")
+    if len(parts) == 4 and all(p.isdigit() for p in parts):
+        return f"{parts[0]}.{parts[1]}.*.*:{port}"
+    return f"mesh-peer:{port}"
+
+
 @app.get("/p2p/peers")
 def get_p2p_peers():
-    return [p.to_dict() for p in p2p.peers.values() if p.is_connected]
+    out = []
+    for p in p2p.peers.values():
+        if p.is_connected:
+            d = p.to_dict()
+            d["address"] = _mask_peer_address(d.get("address", ""))
+            d.pop("url", None)
+            out.append(d)
+    return out
 
 
 @app.get("/p2p/blocks")

@@ -1441,7 +1441,8 @@
         peers.forEach(peer => {
           const rawId = peer.node_id ? (peer.node_id.length > 12 ? peer.node_id.slice(0, 12) + '...' : peer.node_id) : 'anonymous';
           const shortId = escapeHtml(rawId);
-          const peerAddr = escapeHtml(peer.address);
+          const maskedAddr = String(peer.address || '').replace(/^(\d+\.\d+)\.\d+\.\d+/, '$1.*.*');
+          const peerAddr = escapeHtml(maskedAddr) + ' (OpSec Masked)';
           const latencyStr = escapeHtml(peer.latency_ms > 0 ? `${peer.latency_ms} ms` : '< 10 ms');
           const heightStr = peer.height !== undefined ? `#${escapeHtml(peer.height)}` : '-';
           rowsHtml += `

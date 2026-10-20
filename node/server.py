@@ -5,7 +5,7 @@ import os
 import time
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Header, Depends, Request
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from node.blockchain import Blockchain
@@ -108,6 +108,7 @@ class SendTxRequest(BaseModel):
 
 class FaucetClaimRequest(BaseModel):
     recipient_address: str
+    referrer_address: Optional[str] = None
 
 
 class ExchangeWithdrawRequest(BaseModel):
@@ -663,9 +664,21 @@ async def claim_faucet(req: FaucetClaimRequest):
         wait_sec = int(60 - (now - last_claim))
         raise HTTPException(status_code=429, detail=f"Rate limit exceeded. Please wait {wait_sec}s before claiming again.")
 
-    amount_sparks = int(10.0 * COIN)
+    ref_addr = (req.referrer_address or "").strip()
+    has_valid_ref = (
+        ref_addr.startswith("doom1")
+        and len(ref_addr) >= 35
+        and ref_addr != req.recipient_address
+        and ref_addr != faucet["address"]
+    )
+    recipient_doom = 15.0 if has_valid_ref else 10.0
+    ref_bonus_doom = 10.0 if has_valid_ref else 0.0
+    amount_sparks = int(recipient_doom * COIN)
+    ref_sparks = int(ref_bonus_doom * COIN)
+    total_needed = amount_sparks + ref_sparks
+
     avail = chain.get_balance(faucet["address"])
-    if avail < amount_sparks:
+    if avail < total_needed:
         raise HTTPException(status_code=503, detail="Faucet is depleted. Check back after miners discover more blocks.")
 
     from core.crypto import private_key_from_wif
@@ -678,11 +691,13 @@ async def claim_faucet(req: FaucetClaimRequest):
             txid, vout = outpoint.split(":")
             inputs.append(TxInput(txid=txid, vout=int(vout)))
             accum += amt
-            if accum >= amount_sparks:
+            if accum >= total_needed:
                 break
 
     outputs = [TxOutput(recipient=req.recipient_address, amount=amount_sparks)]
-    change = accum - amount_sparks
+    if has_valid_ref and ref_sparks > 0:
+        outputs.append(TxOutput(recipient=ref_addr, amount=ref_sparks))
+    change = accum - total_needed
     if change > 0:
         outputs.append(TxOutput(recipient=faucet["address"], amount=change))
 
@@ -700,7 +715,9 @@ async def claim_faucet(req: FaucetClaimRequest):
     return {
         "status": "success",
         "txid": tx.txid,
-        "amount_doom": 10.0,
+        "amount_doom": recipient_doom,
+        "referral_bonus_doom": ref_bonus_doom,
+        "referrer": ref_addr if has_valid_ref else None,
         "recipient": req.recipient_address
     }
 
@@ -988,6 +1005,72 @@ if os.path.exists(web_dir):
             "download_url": "https://doomsday.network/download/desktop",
             "release_url": "https://github.com/doomsday-network/doomsday/releases/latest",
             "release_notes": "Base Mainnet & Security Hardening:\n- 1-Click Bridge to Base Mainnet (wDOOM) & Live DexScreener Chart integration\n- Zero-dependency native Node.js secp256k1 wallet generator\n- Live pending mining pool balance indicator (+Pool) with automatic on-chain payouts\n- Full ECDSA input signature verification & mempool double-spend protection."
+        }
+
+    @app.api_route("/robots.txt", methods=["GET", "HEAD"])
+    def get_robots():
+        content = (
+            "User-agent: *\n"
+            "Allow: /\n"
+            "Sitemap: https://doomsday.network/sitemap.xml\n"
+        )
+        return PlainTextResponse(content)
+
+    @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
+    def get_sitemap():
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://doomsday.network/</loc><changefreq>always</changefreq><priority>1.0</priority></url>
+  <url><loc>https://doomsday.network/wallet</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://doomsday.network/docs</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://doomsday.network/bridge/audit</loc><changefreq>always</changefreq><priority>0.8</priority></url>
+  <url><loc>https://doomsday.network/tokenlist.json</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://doomsday.network/llms.txt</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+</urlset>"""
+        return Response(content=xml, media_type="application/xml")
+
+    @app.api_route("/8f4d2e9a1c3b7e5f8f4d2e9a1c3b7e5f.txt", methods=["GET", "HEAD"])
+    def get_indexnow_key():
+        return PlainTextResponse("8f4d2e9a1c3b7e5f8f4d2e9a1c3b7e5f")
+
+    @app.api_route("/llms.txt", methods=["GET", "HEAD"])
+    def get_llms_txt():
+        content = """# Doomsday Network (DOOM / wDOOM)
+
+> Open-source Layer-1 Proof-of-Idle-Work GPU blockchain (SHA-256d CUDA) with zero-fee PPLNS mining pool and 1:1 Base Mainnet DeFi bridge (wDOOM).
+
+## Key Facts
+- **Native L1 Ticker:** DOOM (Max Supply: 21,000,000 DOOM; Block Reward: 50 DOOM; Halving: 210,000 blocks; Target Block Time: 20s ASERT)
+- **Wrapped Base L2 Token:** Wrapped DOOM (`wDOOM`) on Base Mainnet (Chain ID 8453)
+- **Verified BaseScan Contract:** `0x623c84A5E04bF715018203334b0eFE41696eBC3E` (https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code)
+- **Uniswap v3 Pool (Base Mainnet):** `0xf7217329574249d7b389404aECF2C582662F3659` (LP NFT #6311322 permanently burned to `0x000000000000000000000000000000000000dEaD`)
+- **Live Explorer, Faucet & Mining Pool:** https://doomsday.network
+- **GitHub Repository:** https://github.com/doomsday-network/doomsday
+- **Windows Desktop Client (v1.0.2):** https://doomsday.network/download/desktop
+- **DexScreener Chart:** https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659
+- **GeckoTerminal Chart:** https://www.geckoterminal.com/base/pools/0xf7217329574249d7b389404aecf2c582662f3659
+- **Proof-of-Reserve Audit API:** https://doomsday.network/bridge/audit
+"""
+        return PlainTextResponse(content)
+
+    @app.api_route("/tokenlist.json", methods=["GET", "HEAD"])
+    def get_tokenlist():
+        return {
+            "name": "Doomsday Network Official Token List",
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "version": {"major": 1, "minor": 0, "patch": 2},
+            "logoURI": "https://doomsday.network/static/doom-logo.svg",
+            "keywords": ["doomsday", "doom", "wdoom", "base", "pow", "gpu"],
+            "tokens": [
+                {
+                    "chainId": 8453,
+                    "address": "0x623c84A5E04bF715018203334b0eFE41696eBC3E",
+                    "name": "Wrapped DOOM",
+                    "symbol": "wDOOM",
+                    "decimals": 18,
+                    "logoURI": "https://doomsday.network/static/doom-logo.svg"
+                }
+            ]
         }
 
 

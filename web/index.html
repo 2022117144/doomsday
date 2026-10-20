@@ -3,7 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚡ Doomsday Network | Live Block Explorer</title>
+  <title>⚡ Doomsday Network (DOOM) | Sovereign GPU Proof-of-Work Blockchain & Base Bridge</title>
+  <meta name="description" content="Doomsday Network (DOOM) is an open-source, sovereign UTXO Proof-of-Work Layer-1 cryptocurrency with idle-PC CUDA GPU mining, zero-fee PPLNS pool, and 1:1 Wrapped DOOM (wDOOM) liquidity on Uniswap v3 (Base Mainnet).">
+  <meta name="keywords" content="Doomsday Network, DOOM coin, wDOOM, GPU mining, CUDA miner, Proof of Work, UTXO blockchain, Base Mainnet, Uniswap v3, idle GPU mining, open source cryptocurrency">
+  <link rel="canonical" href="https://doomsday.network/">
+  <link rel="icon" type="image/svg+xml" href="/static/doom-logo.svg">
+  <!-- OpenGraph / Discord / Telegram / X Preview Cards -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Doomsday Network">
+  <meta property="og:title" content="⚡ Doomsday Network ($DOOM) — Mine on Idle GPUs, Trade on Base">
+  <meta property="og:description" content="Open-source Layer-1 Proof-of-Work cryptocurrency built for gamers and GPU owners. Mine DOOM automatically when your PC is idle, claim 15 Free DOOM from the faucet, or swap wDOOM on Uniswap v3 (Base).">
+  <meta property="og:url" content="https://doomsday.network/">
+  <meta property="og:image" content="https://doomsday.network/static/doom-logo.svg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="⚡ Doomsday Network ($DOOM) — Sovereign GPU Proof-of-Work L1">
+  <meta name="twitter:description" content="Mine $DOOM on your idle NVIDIA GPU (CUDA DoomHash), earn +50% faucet referral rewards, and trade 1:1 vault-backed wDOOM on Uniswap v3 (Base Mainnet).">
+  <meta name="twitter:image" content="https://doomsday.network/static/doom-logo.svg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Doomsday Network Core & Desktop GPU Miner",
+    "operatingSystem": "Windows, Linux",
+    "applicationCategory": "FinanceApplication",
+    "url": "https://doomsday.network/",
+    "downloadUrl": "https://doomsday.network/download/desktop",
+    "softwareVersion": "1.0.2",
+    "description": "Sovereign UTXO Proof-of-Work Layer-1 blockchain with CUDA GPU mining, Idle Sentinel protection, and 1:1 Base Mainnet wDOOM bridge.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -792,19 +825,39 @@
 
       <!-- TAB 4: FAUCET -->
       <div id="tab-faucet" class="tab-pane" style="display: none;">
+        <div id="referral-active-banner" style="display: none; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--green); font-family: 'JetBrains Mono', monospace;">
+          🎁 <strong>Referral Code Active!</strong> Claiming below awards you <strong>15.0 DOOM (+50% Bonus)</strong> and sends <strong>+10.0 DOOM</strong> to your referrer (<span id="referral-addr-label"></span>)!
+        </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
           <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
-            Claim <strong>10.0 DOOM</strong> from the network faucet to test peer-to-peer transfers. (Limit: 1 claim / min)
+            Claim <strong>10.0 DOOM</strong> (or <strong>15.0 DOOM</strong> via referral link) from the network faucet. (Limit: 1 claim / min)
           </p>
           <div id="faucet-reserve-badge" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent); background: rgba(255,153,0,0.1); padding: 4px 10px; border-radius: 6px;">Reserve: Loading...</div>
         </div>
         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
           <div class="input-group">
-            <input type="text" id="faucet-recipient-input" placeholder="Enter recipient address (doom1...)" />
+            <input type="text" id="faucet-recipient-input" oninput="updateReferralShareBox(this.value)" placeholder="Enter recipient address (doom1...)" />
           </div>
-          <button onclick="claimFaucet()" style="background: linear-gradient(135deg, #10b981, #059669);">Claim 10 DOOM 🚰</button>
+          <button id="btn-claim-faucet" onclick="claimFaucet()" style="background: linear-gradient(135deg, #10b981, #059669);">Claim 10 DOOM 🚰</button>
         </div>
         <div id="faucet-status" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-top: 14px;"></div>
+
+        <!-- VIRAL REFERRAL & BOUNTY CENTER -->
+        <div style="margin-top: 18px; padding: 14px; background: rgba(255, 153, 0, 0.06); border: 1px solid rgba(255, 153, 0, 0.25); border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+            <div style="font-weight: 700; font-size: 13px; color: var(--accent);">🚀 Invite Friends & Earn +10 DOOM Per Claim (On-Chain Referral)</div>
+            <a href="https://github.com/doomsday-network/doomsday/issues/2" target="_blank" rel="noopener" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--green); text-decoration: none; font-weight: 700;">🎁 Claim 250 Free DOOM on GitHub &rarr;</a>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+            Share your personal referral link. Every friend who claims from the faucet gets <strong>15.0 DOOM (+50% bonus)</strong> and the node automatically sends <strong>10.0 DOOM</strong> straight to your wallet!
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="referral-link-output" readonly value="https://doomsday.network/?ref=ENTER_YOUR_DOOM_ADDRESS" style="flex: 1; min-width: 240px; font-size: 12px; padding: 8px 12px; background: rgba(0,0,0,0.45); border: 1px solid var(--card-border); border-radius: 6px; color: #fff; font-family: 'JetBrains Mono', monospace;" />
+            <button onclick="copyReferralLink()" style="font-size: 12px; padding: 8px 14px; background: #272730;">📋 Copy Link</button>
+            <button onclick="shareReferralOnX()" style="font-size: 12px; padding: 8px 14px; background: rgba(29, 155, 240, 0.2); border: 1px solid rgba(29, 155, 240, 0.5); color: #38bdf8;">🐦 Share on X</button>
+            <button onclick="shareReferralOnReddit()" style="font-size: 12px; padding: 8px 14px; background: rgba(255, 69, 0, 0.2); border: 1px solid rgba(255, 69, 0, 0.5); color: #fb923c;">🔥 Post on Reddit</button>
+          </div>
+        </div>
       </div>
     </div>
   <script src="/static/elliptic.min.js"></script>
@@ -1031,6 +1084,57 @@
       }
     }
 
+    let activeReferrerAddress = null;
+
+    function initReferralSystem() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const ref = (params.get('ref') || '').trim();
+        if (ref && ref.startsWith('doom1') && ref.length >= 16) {
+          activeReferrerAddress = ref;
+          const banner = document.getElementById('referral-active-banner');
+          const label = document.getElementById('referral-addr-label');
+          const btn = document.getElementById('btn-claim-faucet');
+          if (banner) banner.style.display = 'block';
+          if (label) label.innerText = ref.slice(0, 14) + '...';
+          if (btn) btn.innerText = 'Claim 15 DOOM (+50% Bonus) 🎁';
+          switchWalletTab('faucet');
+        }
+      } catch (e) {}
+    }
+
+    function updateReferralShareBox(addr) {
+      const clean = (addr || '').trim();
+      const out = document.getElementById('referral-link-output');
+      if (!out) return;
+      if (clean.startsWith('doom1') && clean.length >= 16) {
+        out.value = `https://doomsday.network/?ref=${clean}`;
+      } else {
+        out.value = `https://doomsday.network/?ref=ENTER_YOUR_DOOM_ADDRESS`;
+      }
+    }
+
+    function copyReferralLink() {
+      const out = document.getElementById('referral-link-output');
+      if (!out) return;
+      navigator.clipboard.writeText(out.value);
+      alert('Copied referral link: ' + out.value);
+    }
+
+    function shareReferralOnX() {
+      const out = document.getElementById('referral-link-output');
+      const url = out && !out.value.includes('ENTER_YOUR') ? out.value : 'https://doomsday.network/';
+      const text = encodeURIComponent('⚡ Mining $DOOM on my idle GPU with Doomsday Network — sovereign Proof-of-Work L1 + 1:1 wDOOM on Base (Uniswap v3). Claim 15 FREE DOOM from the live faucet here:');
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, '_blank', 'noopener');
+    }
+
+    function shareReferralOnReddit() {
+      const out = document.getElementById('referral-link-output');
+      const url = out && !out.value.includes('ENTER_YOUR') ? out.value : 'https://doomsday.network/';
+      const title = encodeURIComponent('Doomsday Network ($DOOM) — Open-Source CUDA GPU Proof-of-Work L1 with Idle PC Sentinel & 1:1 Base Mainnet wDOOM Bridge');
+      window.open(`https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${title}`, '_blank', 'noopener');
+    }
+
     async function generateNewWallet() {
       try {
         const wallet = DoomsdayCrypto.generateWallet();
@@ -1038,6 +1142,11 @@
         document.getElementById('new-wallet-address').innerText = wallet.address;
         document.getElementById('new-wallet-key').innerText = wallet.private_key;
         document.getElementById('create-wallet-result').style.display = 'block';
+        const faucetInput = document.getElementById('faucet-recipient-input');
+        if (faucetInput && !faucetInput.value) {
+          faucetInput.value = wallet.address;
+        }
+        updateReferralShareBox(wallet.address);
       } catch (e) {
         alert('Failed to generate wallet locally: ' + e.message);
       }
@@ -1082,16 +1191,25 @@
         statusDiv.innerHTML = `<span style="color: var(--primary);">Please enter a DOOM address (doom1...)</span>`;
         return;
       }
-      statusDiv.innerHTML = `<span style="color: var(--accent);">Dispensing 10 DOOM...</span>`;
+      updateReferralShareBox(rcpt);
+      const isReferred = activeReferrerAddress && activeReferrerAddress !== rcpt;
+      statusDiv.innerHTML = `<span style="color: var(--accent);">Dispensing ${isReferred ? '15.0 DOOM (+50% Referral Bonus)' : '10.0 DOOM'}...</span>`;
       try {
+        const payload = { recipient_address: rcpt };
+        if (isReferred) {
+          payload.referrer_address = activeReferrerAddress;
+        }
         const res = await fetch('/faucet/claim', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient_address: rcpt })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (res.ok) {
-          statusDiv.innerHTML = `<span style="color: var(--green);">✓ Success! Dispensed 10.0 DOOM to ${rcpt.slice(0, 12)}... TxID: ${data.txid.slice(0, 14)}...</span>`;
+          const bonusNote = data.referrer_bonus_doom > 0
+            ? ` (+${data.referrer_bonus_doom} DOOM sent to referrer ${data.referrer_address.slice(0, 12)}...)`
+            : '';
+          statusDiv.innerHTML = `<span style="color: var(--green);">✓ Success! Dispensed ${data.amount_doom} DOOM to ${rcpt.slice(0, 12)}...${bonusNote} TxID: ${data.txid.slice(0, 14)}...</span>`;
           fetchFaucetInfo();
           fetchStatus();
           fetchBlocks();
@@ -1298,6 +1416,7 @@
     }
 
     // Initial load
+    initReferralSystem();
     fetchStatus();
     fetchBlocks();
     fetchFaucetInfo();

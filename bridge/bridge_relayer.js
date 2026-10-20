@@ -120,18 +120,20 @@ async function main() {
     try {
       const status = await fetchJson(`${nodeUrl}/status`);
       const tip = status.height;
+      // Require 2 confirmations (tip - 1) before minting on Base to protect against 1-block orphans
+      const safeTip = Math.max(0, tip - 1);
 
-      if (tip > state.lastScannedHeight) {
+      if (safeTip > state.lastScannedHeight) {
         const fromH = state.lastScannedHeight + 1;
-        const toH = Math.min(tip, fromH + 50);
+        const limit = Math.min(50, safeTip - fromH + 1);
 
-        // Fetch blocks
-        const blocks = await fetchJson(`${nodeUrl}/blocks?limit=${toH - fromH + 1}`);
-        // Reverse if node returns descending
+        // Fetch exact sequential range from P2P block synchronization endpoint
+        const blocks = await fetchJson(`${nodeUrl}/p2p/blocks?start_height=${fromH}&limit=${limit}`);
         const ordered = [...blocks].sort((a, b) => a.height - b.height);
 
         for (const block of ordered) {
           if (block.height <= state.lastScannedHeight) continue;
+          if (block.height > safeTip) break;
 
           for (const tx of (block.transactions || [])) {
             // Check outputs for vault deposit

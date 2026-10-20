@@ -314,8 +314,9 @@ async def request_pool_payout(req: FaucetClaimRequest):
     priv = private_key_from_wif(pool_wallet["private_key"])
     inputs = []
     accum = 0
+    mempool_spent = chain.get_mempool_spent_outpoints()
     for outpoint, (rcpt, amt) in chain.utxo_set.items():
-        if rcpt == pool.pool_address:
+        if rcpt == pool.pool_address and outpoint not in mempool_spent:
             txid, vout = outpoint.split(":")
             inputs.append(TxInput(txid=txid, vout=int(vout)))
             accum += amt
@@ -571,6 +572,37 @@ def get_faucet_info():
     }
 
 
+@app.get("/bridge/audit")
+def get_bridge_audit():
+    """
+    Public Proof-of-Reserve & Base Mainnet Liquidity Transparency Endpoint.
+    Distinguishes 1:1 user-bridged vault deposits from the initial 100,000 wDOOM
+    Uniswap v3 DEX Liquidity Bootstrap pool on Base Mainnet.
+    """
+    vault_address = "doom1vault000000000000000000000000000000"
+    vault_sparks = chain.get_balance(vault_address)
+    vault_utxos = chain.get_address_utxos(vault_address)
+    return {
+        "status": "operational",
+        "native_vault_address": vault_address,
+        "native_vault_locked_doom": vault_sparks / COIN,
+        "native_vault_locked_sparks": vault_sparks,
+        "native_vault_utxo_count": len(vault_utxos),
+        "evm_network": "Base Mainnet (Chain ID 8453)",
+        "wdoom_contract": "0x623c84A5E04bF715018203334b0eFE41696eBC3E",
+        "uniswap_v3_pool": "0xf7217329574249d7b389404aECF2C582662F3659",
+        "dex_liquidity_bootstrap_wdoom": 100000.0,
+        "user_bridged_circulation_wdoom": vault_sparks / COIN,
+        "expected_total_wdoom_supply": 100000.0 + (vault_sparks / COIN),
+        "audit_note": (
+            "100,000 wDOOM was minted at genesis deployment solely to seed the public "
+            "Uniswap v3 wDOOM/WETH 1% liquidity pool (0xf7217329574249d7b389404aECF2C582662F3659). "
+            "All subsequent wDOOM mints are strictly 1:1 backed by native DOOM locked in "
+            "doom1vault000000000000000000000000000000 and verifiable via processedDoomsdayTxs on Base."
+        )
+    }
+
+
 @app.post("/faucet/claim")
 async def claim_faucet(req: FaucetClaimRequest):
     faucet = load_faucet_wallet()
@@ -592,8 +624,9 @@ async def claim_faucet(req: FaucetClaimRequest):
     priv = private_key_from_wif(faucet["private_key"])
     inputs = []
     accum = 0
+    mempool_spent = chain.get_mempool_spent_outpoints()
     for outpoint, (rcpt, amt) in chain.utxo_set.items():
-        if rcpt == faucet["address"]:
+        if rcpt == faucet["address"] and outpoint not in mempool_spent:
             txid, vout = outpoint.split(":")
             inputs.append(TxInput(txid=txid, vout=int(vout)))
             accum += amt
@@ -767,8 +800,9 @@ async def exchange_withdraw(req: ExchangeWithdrawRequest):
 
     inputs = []
     accum = 0
+    mempool_spent = chain.get_mempool_spent_outpoints()
     for outpoint, (rcpt, amt) in chain.utxo_set.items():
-        if rcpt == req.from_address:
+        if rcpt == req.from_address and outpoint not in mempool_spent:
             txid, vout = outpoint.split(':')
             inputs.append(TxInput(txid=txid, vout=int(vout)))
             accum += amt

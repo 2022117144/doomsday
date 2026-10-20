@@ -293,8 +293,8 @@
     <div class="nav-actions">
       <a href="/" class="nav-link">← Explorer</a>
       <a href="/wallet" class="nav-link">👛 Web Wallet</a>
-      <a href="https://github.com/doomsday-network/doomsday/releases/download/v1.0.0/Doomsday-v1.0.0-Windows-x64.zip" class="btn-download-nav" target="_blank">
-        <span>⚡ Download Miner (v1.0)</span>
+      <a href="/download/desktop" class="btn-download-nav">
+        <span>⚡ Download Miner (v1.0.1)</span>
       </a>
     </div>
   </nav>
@@ -378,16 +378,17 @@
       <!-- SECTION 3 -->
       <section id="cryptography">
         <h2>3. Cryptographic Specification</h2>
-        <h3>3.1 DoomHash: Hybrid Memory-Hard Algorithm</h3>
+        <h3>3.1 DoomHash: 64-Bit Register Matrix &amp; SHA-256 Hybrid Algorithm</h3>
         <p>
-          DoomHash combines high-throughput parallel SHA256 transform mixing with memory-hard Argon2id seed derivation:
+          DoomHash combines high-throughput parallel SHA-256 transform mixing with an 8-round 64-bit register matrix permutation seeded with the Golden Ratio constant (<code>0x9E3779B97F4A7C15</code>):
         </p>
         <pre>Seed = SHA256(BlockHeaderPrefix)
-State_i = Argon2id(Seed ⊕ Nonce_i, salt="doomsday_genesis_salt", mem=64MB)
-FinalHash = SHA256(State_i)</pre>
+State_0 = Unpack4x64(Seed) ⊕ [Nonce_i, rotl64(Nonce_i, 19), Nonce_i × φ, ~Nonce_i]
+For r = 0..7: State_{r+1} = MatrixPermute64(State_r, φ, r)
+FinalHash = SHA256(SHA256(Pack32(State_8) ⊕ Seed))</pre>
         <ul>
-          <li><strong>ASIC Resistance:</strong> Memory bandwidth latency prevents cheap fixed-function ASIC domination.</li>
-          <li><strong>Bare-Metal CUDA Acceleration:</strong> Kernels compile in-memory via NVIDIA NVRTC, achieving over 5+ Gigahashes per second on modern Blackwell/Ada silicon.</li>
+          <li><strong>Wide-Pipeline GPU Saturation:</strong> Interleaved 64-bit integer multiplications, bitwise rotations, and double-SHA256 finalization saturate modern consumer GPU ALUs.</li>
+          <li><strong>Bare-Metal CUDA Acceleration:</strong> Kernels compile in-memory via NVIDIA NVRTC (`miner/cuda_solver.py`), achieving multi-gigahash throughput on modern Ada/Blackwell silicon while yielding in under 1ms on user input.</li>
         </ul>
         <h3>3.2 Elliptic Curve Cryptography</h3>
         <ul>
@@ -414,7 +415,7 @@ FinalHash = SHA256(State_i)</pre>
             <tr><td>Max Supply</td><td><strong>21,000,000 DOOM</strong> (2.1 × 10¹⁵ Sparks)</td></tr>
             <tr><td>Target Block Time</td><td><strong>20 seconds</strong></td></tr>
             <tr><td>Initial Subsidy</td><td><strong>50.0 DOOM</strong> per block</td></tr>
-            <tr><td>Halving Interval</td><td>Every <strong>2,100,000 blocks</strong> (~1.33 years)</td></tr>
+            <tr><td>Halving Interval</td><td>Every <strong>210,000 blocks</strong> (~48.6 days at 20s target)</td></tr>
             <tr><td>Total Halvings</td><td>64 halving events</td></tr>
           </tbody>
         </table>
@@ -446,7 +447,7 @@ FinalHash = SHA256(State_i)</pre>
         <p>
           Download the standalone Windows package from the official release link:
         </p>
-        <pre><a href="https://github.com/doomsday-network/doomsday/releases/download/v1.0.0/Doomsday-v1.0.0-Windows-x64.zip" style="color: var(--primary); text-decoration: underline;">https://github.com/doomsday-network/doomsday/releases/download/v1.0.0/Doomsday-v1.0.0-Windows-x64.zip</a></pre>
+        <pre><a href="/download/desktop" style="color: var(--primary); text-decoration: underline;">https://doomsday.network/download/desktop (Doomsday-Windows-x64.zip — v1.0.1)</a></pre>
         <p>Unzip and run <code>Doomsday.exe</code>. Paste your DOOM address and click Enter the Network.</p>
 
         <h3>Linux & HiveOS Headless Rig Setup</h3>

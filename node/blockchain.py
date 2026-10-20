@@ -34,13 +34,6 @@ class Blockchain:
                     timestamp INTEGER
                 )
             """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS utxos (
-                    outpoint TEXT PRIMARY KEY,
-                    recipient TEXT,
-                    amount INTEGER
-                )
-            """)
             conn.commit()
 
     def _load_or_genesis(self):
@@ -265,23 +258,34 @@ class Blockchain:
         print(f"\n[Blockchain] [P2P] Block #{block.height} accepted via Wire Gossip | Hash: {block.hash[:16]}...")
         return True, "Accepted"
 
+    def get_mempool_spent_outpoints(self) -> set:
+        """Return set of outpoints currently spent by pending transactions in mempool."""
+        spent = set()
+        for tx in self.mempool:
+            for inp in tx.inputs:
+                spent.add(f"{inp.txid}:{inp.vout}")
+        return spent
+
     def get_balance(self, address: str) -> int:
         """Return spendable balance in Sparks for a given address."""
+        spent_in_mempool = self.get_mempool_spent_outpoints()
         total = 0
         for outpoint, (recipient, amount) in self.utxo_set.items():
-            if recipient == address:
+            if recipient == address and outpoint not in spent_in_mempool:
                 total += amount
         return total
 
     def get_address_utxos(self, address: str) -> List[Dict[str, Any]]:
-        """Return list of active unspent outputs for an address."""
+        """Return list of active unspent outputs for an address (excluding mempool-locked inputs)."""
+        spent_in_mempool = self.get_mempool_spent_outpoints()
         results = []
         for outpoint, (recipient, amount_sparks) in self.utxo_set.items():
-            if recipient == address:
+            if recipient == address and outpoint not in spent_in_mempool:
                 txid, vout = outpoint.split(':')
                 results.append({
                     "txid": txid,
                     "vout": int(vout),
+                    "amount": amount_sparks,
                     "amount_sparks": amount_sparks,
                     "amount_doom": amount_sparks / COIN
                 })
@@ -325,6 +329,13 @@ class Blockchain:
 
     def add_transaction_to_mempool(self, tx: Transaction) -> Tuple[bool, str]:
         """Validate and admit a standard user transaction to mempool."""
+        for existing in self.mempool:
+            if existing.txid == tx.txid:
+                return False, "Duplicate transaction already in mempool"
+        mempool_spent = self.get_mempool_spent_outpoints()
+        for inp in tx.inputs:
+            if f"{inp.txid}:{inp.vout}" in mempool_spent:
+                return False, "Input UTXO already spent by pending mempool transaction"
         if not validate_transaction(tx, self.utxo_set):
             return False, "Invalid transaction signatures or double spend"
         self.mempool.append(tx)

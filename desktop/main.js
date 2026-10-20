@@ -532,15 +532,26 @@ ipcMain.handle('detect-hardware', () => {
 
 ipcMain.handle('generate-wallet', () => {
   try {
-    const projectDir = path.dirname(__dirname);
-    const out = execSync('python -c "from core.crypto import generate_keypair, public_key_to_address, private_key_to_wif; priv, pub = generate_keypair(); print(public_key_to_address(pub) + \'|\' + private_key_to_wif(priv))"', {
-      cwd: projectDir,
-      encoding: 'utf8'
-    });
-    const parts = out.trim().split('|');
+    const crypto = require('crypto');
+    const ecdh = crypto.createECDH('secp256k1');
+    ecdh.generateKeys();
+    const privHex = ecdh.getPrivateKey('hex').padStart(64, '0');
+    const pubCompressed = ecdh.getPublicKey(null, 'compressed');
+    const sha = crypto.createHash('sha256').update(pubCompressed).digest();
+    let ripemd;
+    try {
+      ripemd = crypto.createHash('ripemd160').update(sha).digest();
+    } catch (_) {
+      ripemd = crypto.createHash('sha256').update(sha).digest().subarray(0, 20);
+    }
+    const c1 = crypto.createHash('sha256').update(ripemd).digest();
+    const checksum = crypto.createHash('sha256').update(c1).digest().subarray(0, 4);
+    const address = 'doom1' + Buffer.concat([ripemd, checksum]).toString('hex');
+
     const walletData = {
-      address: parts[0],
-      private_key: parts[1],
+      address: address,
+      private_key: privHex,
+      public_key: pubCompressed.toString('hex'),
       created_at: new Date().toISOString()
     };
     try {
@@ -599,7 +610,9 @@ ipcMain.handle('close-window', () => {
   if (mainWindow) mainWindow.close();
 });
 ipcMain.handle('open-external', (_event, url) => {
-  shell.openExternal(url);
+  if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+    shell.openExternal(url);
+  }
 });
 
 ipcMain.handle('toggle-force-mine', () => {

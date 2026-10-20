@@ -339,13 +339,15 @@
       const inputs = [];
       let accum = 0;
       for (const utxo of utxos) {
+        const utxoSparks = utxo.amount !== undefined ? utxo.amount : utxo.amount_sparks;
+        if (!utxoSparks || utxoSparks <= 0) continue;
         inputs.push({
           txid: utxo.txid,
           vout: utxo.vout,
           signature: '',
           pubkey_hex: ''
         });
-        accum += utxo.amount;
+        accum += utxoSparks;
         if (accum >= totalRequired) break;
       }
 

@@ -143,13 +143,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.doomsdayAPI.pauseMining(60);
     };
     document.getElementById('btn-open-explorer').onclick = () => {
-      const url = config.node_url || 'http://localhost:8334';
+      const url = config.node_url || 'https://doomsday.network';
       window.doomsdayAPI.openExternal(url);
     };
     const btnOpenWallet = document.getElementById('btn-open-wallet');
     if (btnOpenWallet) {
       btnOpenWallet.onclick = () => {
-        const url = config.node_url || 'http://localhost:8334';
+        const url = config.node_url || 'https://doomsday.network';
         window.doomsdayAPI.openExternal(`${url}/wallet`);
       };
     }

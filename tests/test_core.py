@@ -2,7 +2,7 @@ import time
 from core.crypto import generate_keypair, public_key_to_address, bits_to_target
 from core.transaction import create_coinbase_tx, Transaction, TxInput, TxOutput, COIN
 from core.block import create_genesis_block, Block, BlockHeader, calculate_merkle_root
-from core.consensus import validate_block, get_block_reward, calculate_next_bits
+from core.consensus import validate_block, validate_transaction, get_block_reward, calculate_next_bits, HALVING_INTERVAL
 
 def test_core_flow():
     print("Generating keypair...")
@@ -64,5 +64,56 @@ def test_core_flow():
     next_bits = calculate_next_bits(b1, genesis)
     print("Next Bits calculated:", hex(next_bits))
 
+
+def test_transaction_security_and_halving():
+    # 1. Verify 21M supply schedule with 210,000 block halving interval
+    assert HALVING_INTERVAL == 210_000
+    assert get_block_reward(0) == 50 * COIN
+    assert get_block_reward(209_999) == 50 * COIN
+    assert get_block_reward(210_000) == 25 * COIN
+
+    # 2. Verify cryptographic signature & ownership enforcement
+    priv_alice, pub_alice = generate_keypair()
+    addr_alice = public_key_to_address(pub_alice)
+
+    priv_attacker, pub_attacker = generate_keypair()
+    addr_attacker = public_key_to_address(pub_attacker)
+
+    fake_txid = "a" * 64
+    utxo_set = {f"{fake_txid}:0": (addr_alice, 10 * COIN)}
+
+    # Legitimate transaction signed by Alice
+    valid_tx = Transaction(
+        inputs=[TxInput(txid=fake_txid, vout=0)],
+        outputs=[TxOutput(recipient=addr_attacker, amount=5 * COIN), TxOutput(recipient=addr_alice, amount=5 * COIN)]
+    )
+    valid_tx.sign_input(0, priv_alice)
+    assert validate_transaction(valid_tx, utxo_set) is True
+
+    # Attacker tries to sign Alice's UTXO with attacker's key
+    stolen_tx = Transaction(
+        inputs=[TxInput(txid=fake_txid, vout=0)],
+        outputs=[TxOutput(recipient=addr_attacker, amount=10 * COIN)]
+    )
+    stolen_tx.sign_input(0, priv_attacker)
+    assert validate_transaction(stolen_tx, utxo_set) is False
+
+    # Attacker tries to pass Alice's pubkey with a forged signature
+    forged_tx = Transaction(
+        inputs=[TxInput(txid=fake_txid, vout=0, signature="30440220" + "11" * 32 + "0220" + "22" * 32, pubkey_hex=valid_tx.inputs[0].pubkey_hex)],
+        outputs=[TxOutput(recipient=addr_attacker, amount=10 * COIN)]
+    )
+    assert validate_transaction(forged_tx, utxo_set) is False
+
+    # Negative output value inflation attack
+    neg_tx = Transaction(
+        inputs=[TxInput(txid=fake_txid, vout=0)],
+        outputs=[TxOutput(recipient=addr_attacker, amount=100 * COIN), TxOutput(recipient=addr_alice, amount=-90 * COIN)]
+    )
+    neg_tx.sign_input(0, priv_alice)
+    assert validate_transaction(neg_tx, utxo_set) is False
+
+
 if __name__ == "__main__":
     test_core_flow()
+    test_transaction_security_and_halving()

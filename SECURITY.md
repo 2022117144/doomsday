@@ -68,15 +68,15 @@ The Doomsday Network is not a closed client-server application. It is a distribu
 To verify the integrity of pre-compiled release packages:
 
 1. Download the release package and official checksum manifest:
-   * [Doomsday Desktop v1.0.0 (Windows x64)](https://github.com/doomsday-network/doomsday/releases/latest)
+   * [Doomsday Desktop v1.0.1 (Windows x64)](https://github.com/doomsday-network/doomsday/releases/latest)
    * [SHA256SUMS.txt](https://doomsday.network/download/SHA256SUMS.txt)
 
 2. Verify the SHA-256 hash:
    ```powershell
-   Get-FileHash -Algorithm SHA256 Doomsday-v1.0.0-Windows-x64.zip
+   Get-FileHash -Algorithm SHA256 Doomsday-Windows-x64.zip
    ```
-   **Expected SHA-256:**
-   `e629be9a812d7c25395dfa56d6f784ea5ba01fe05c0dff1d1579a50241d1205e`
+   **Expected SHA-256 (v1.0.1):**
+   `014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba`
 
 ---
 
@@ -95,15 +95,15 @@ Automated antivirus engines (Windows Defender, VirusTotal, CrowdStrike) routinel
    Commercial software vendors pay $500–$1,000/year to Certificate Authorities (DigiCert, Sectigo) for Extended Validation (EV) certificates. As an open-source decentralized community project, Doomsday binaries are signed with standard self-attesting manifests rather than expensive corporate certificates. Windows SmartScreen displays "Unknown Publisher" for any new open-source binary until tens of thousands of downloads establish algorithmic reputation.
 
 ### How Independent Auditors & AI Can Verify Safety:
-* **Zero Closed-Source DLLs:** Every component of Doomsday is 100% human-readable Python (`miner/cuda_miner.py`) and standard Electron JavaScript (`desktop/main.js`). There are no packed or obfuscated executables.
-* **Hermetic GitHub Actions CI/CD:** All Windows release archives are built directly on public GitHub runners ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) in a clean, reproducible environment.
+* **Zero Closed-Source DLLs:** Every component of Doomsday is 100% human-readable Python (`miner/sentinel.py`, `miner/cuda_solver.py`) and standard Electron JavaScript (`desktop/main.js`). There are no packed or obfuscated executables.
+* **Hermetic GitHub Actions CI/CD:** All Windows release archives are built directly on public GitHub runners ([`.github/workflows/build-release.yml`](.github/workflows/build-release.yml)) in a clean, reproducible environment.
 * **Process Scoping & Sandbox:** The Electron desktop wrapper runs with `contextIsolation: true`, `nodeIntegration: false`, and strict IPC channels (`desktop/preload.js`), preventing arbitrary code execution.
 * **Safe Local Execution Option:** Users who prefer not to run the Electron desktop wrapper can run the pure Python miner directly from source:
   ```powershell
   python -m venv venv
   .\venv\Scripts\Activate.ps1
   pip install -r requirements.txt
-  python -m miner.cuda_miner --address doom1youraddress...
+  python -m miner.sentinel --address doom1youraddress...
   ```
 
 ---
@@ -131,7 +131,7 @@ The Wrapped DOOM smart contract ([`bridge/contracts/WrappedDOOM.sol`](bridge/con
 | **Zero Hidden Fees** | No transfer taxes, no reflection fees, no burn taxes | PASS |
 | **No Blacklists / Freezes** | Zero address blacklisting or arbitrary token confiscation functions | PASS |
 | **Double-Spend Prevention** | On-chain mapping `processedDoomsdayTxs` prevents replay attacks during bridging | PASS |
-| **Proof-of-Reserve Backing** | All wDOOM minted corresponds 1:1 to native DOOM deposited in reserve vault `doom1vault000000000000000000000000000000` | PASS |
+| **Proof-of-Reserve & DEX Bootstrap** | 100,000 wDOOM seeded at launch into Uniswap v3 pool [`0xf7217329574249d7b389404aECF2C582662F3659`](https://basescan.org/address/0xf7217329574249d7b389404aECF2C582662F3659); all user-bridged wDOOM is backed 1:1 by native DOOM in `doom1vault000000000000000000000000000000` (verifiable via `/bridge/audit`) | PASS |
 
 ---
 

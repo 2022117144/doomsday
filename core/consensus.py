@@ -5,7 +5,7 @@ from core.transaction import Transaction, COIN, TxInput
 from core.block import Block, calculate_merkle_root
 
 TARGET_BLOCK_TIME = 20  # 20 seconds per block
-HALVING_INTERVAL = 2_100_000  # Halving every 2.1M blocks (~1.33 years)
+HALVING_INTERVAL = 210_000  # Halving every 210,000 blocks (50 * 210,000 * 2 = 21,000,000 DOOM max supply)
 INITIAL_REWARD_SPARKS = 50 * COIN
 ASERT_HALF_LIFE = 240  # 4 minutes smoothing factor (12 blocks)
 
@@ -60,7 +60,19 @@ def validate_transaction(tx: Transaction, utxo_set: Dict[str, Tuple[str, int]]) 
     UTXO set maps f"{txid}:{vout}" -> (recipient_address, amount_sparks)
     """
     if tx.is_coinbase:
-        return len(tx.outputs) > 0 and tx.outputs[0].amount > 0
+        return len(tx.outputs) > 0 and all(o.amount > 0 for o in tx.outputs)
+
+    if not tx.inputs or not tx.outputs:
+        return False
+
+    if any(out.amount <= 0 for out in tx.outputs):
+        return False
+
+    if tx.txid != tx.calculate_txid():
+        return False
+
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from core.crypto import public_key_to_address, verify_signature
 
     total_in = 0
     spent_keys: Set[str] = set()
@@ -77,8 +89,21 @@ def validate_transaction(tx: Transaction, utxo_set: Dict[str, Tuple[str, int]]) 
         owner_addr, amount = utxo_set[key]
         total_in += amount
 
-        # Verify ECDSA signature
+        # Verify ECDSA signature and public key ownership
         if not inp.signature or not inp.pubkey_hex:
+            return False
+
+        try:
+            pub_bytes = bytes.fromhex(inp.pubkey_hex)
+            public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), pub_bytes)
+            derived_addr = public_key_to_address(public_key)
+            if derived_addr != owner_addr:
+                return False
+            sig_bytes = bytes.fromhex(inp.signature)
+            signing_msg = tx.get_signing_bytes(idx)
+            if not verify_signature(public_key, sig_bytes, signing_msg):
+                return False
+        except Exception:
             return False
 
     total_out = sum(out.amount for out in tx.outputs)

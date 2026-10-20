@@ -61,7 +61,7 @@ Instead of running your GPU at 100% while you're trying to play games or work, t
 
 ### Real GPU Benchmarks (CUDA Midstate Solver)
 - **NVIDIA RTX 5080:** `~6,900 MH/s` (`6.9 GH/s`)
-- **NVIDIA RTX 4060 (ITX NR200):** `~2,630 MH/s` (`2.63 GH/s` @ `40°C–58°C`)
+- **NVIDIA RTX 4060:** `~2,630 MH/s` (`2.63 GH/s` @ `40°C–58°C`)
 
 ### Network Specs & Live DeFi Bridge
 - **Algorithm:** Double SHA-256 (`SHA-256d`) with 64-byte midstate optimization

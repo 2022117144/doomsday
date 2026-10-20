@@ -76,7 +76,7 @@ To verify the integrity of pre-compiled release packages:
    Get-FileHash -Algorithm SHA256 Doomsday-Windows-x64.zip
    ```
    **Expected SHA-256 (v1.0.2):**
-   `f41ad4e42a49475c4b867866009cc38fcf15d6b7722c5b3d9837d1c3c1964474`
+   `4b6e663204e12f3aad9dc9b38f8db7947cf0c18ffbef9e90336d8a44724ef986`
 
 ---
 

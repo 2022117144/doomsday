@@ -32,11 +32,13 @@
     "extraResources": [
       {
         "from": "../core",
-        "to": "core"
+        "to": "core",
+        "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc"]
       },
       {
         "from": "../miner",
-        "to": "miner"
+        "to": "miner",
+        "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc", "!**/*.dll"]
       }
     ],
     "win": {

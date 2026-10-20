@@ -1,6 +1,6 @@
 # Off-Box Sovereign Ledger Backup Sync
 # Pulls the latest atomic SQLite backup + pool state from doomsday-seed-node (GCP)
-# to local storage and mirrors to NR200 (Y:\doomsday\backups).
+# to local storage and mirrors to secondary network storage if mounted.
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
@@ -22,7 +22,7 @@ $ts = (Get-Date).ToUniversalTime().ToString("yyyyMMdd-HHmmss")
 Copy-Item -Path (Join-Path $LocalBackupDir "doomsday.db") -Destination (Join-Path $ArchiveDir "doomsday-$ts.db") -Force
 
 if (Test-Path "Y:\doomsday") {
-    Write-Host "[3/3] Mirroring off-box backup to NR200 (Y:\doomsday\backups)..." -ForegroundColor Cyan
+    Write-Host "[3/3] Mirroring off-box backup to secondary storage (Y:\doomsday\backups)..." -ForegroundColor Cyan
     New-Item -ItemType Directory -Force -Path "Y:\doomsday\backups\latest" | Out-Null
     Copy-Item -Path "$LocalBackupDir\*" -Destination "Y:\doomsday\backups\latest\" -Force
 }

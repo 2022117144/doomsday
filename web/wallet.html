@@ -410,6 +410,7 @@
         <div class="tabs">
           <button class="tab-btn active" onclick="switchTab('receive')">📥 Receive</button>
           <button class="tab-btn" onclick="switchTab('send')">📤 Send DOOM</button>
+          <button class="tab-btn" onclick="switchTab('bridge')">🌉 Bridge to Base</button>
           <button class="tab-btn" onclick="switchTab('backup')">🛡 Backup & Security</button>
         </div>
 
@@ -443,6 +444,49 @@
             <input type="text" class="form-input" value="0.001 DOOM (Standard)" readonly style="background: #121217; color: var(--text-muted);">
           </div>
           <button id="btn-submit-tx" class="btn-primary" style="width: 100%; justify-content: center;">⚡ Sign & Broadcast Transaction</button>
+        </div>
+
+        <!-- TAB: BRIDGE -->
+        <div id="tab-bridge" style="display: none;">
+          <div style="background: rgba(0, 82, 255, 0.08); border: 1px solid rgba(0, 82, 255, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 700; color: #3b82f6; font-family: 'JetBrains Mono', monospace; font-size: 13px;">🛡️ 1:1 PROOF-OF-RESERVE BRIDGE (BASE)</span>
+              <span style="font-size: 11px; background: rgba(0, 255, 136, 0.15); color: #00ff88; padding: 2px 8px; border-radius: 4px; font-weight: 700;">LIVE ON MAINNET</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 10px 0; line-height: 1.5;">
+              Deposit native DOOM to the reserve vault to automatically mint 1:1 <strong>Wrapped DOOM (wDOOM)</strong> on Base directly into your EVM wallet.
+            </p>
+            <div style="display: flex; gap: 12px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); flex-wrap: wrap;">
+              <span>wDOOM: <a href="https://basescan.org/token/0x623c84A5E04bF715018203334b0eFE41696eBC3E" target="_blank" style="color: #3b82f6;">0x623c...eBC3E</a></span>
+              <span>•</span>
+              <span><a href="https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659" target="_blank" style="color: #00ff88;">📈 DexScreener Chart</a></span>
+              <span>•</span>
+              <span><a href="https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E" target="_blank" style="color: #ff007a;">🦄 Trade on Uniswap</a></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">YOUR BASE / EVM RECIPIENT ADDRESS:</label>
+            <input type="text" id="bridge-evm-recipient" class="form-input" placeholder="0x... (e.g. Coinbase Wallet, MetaMask)">
+            <span style="font-size: 11px; color: var(--text-muted);">The wDOOM tokens will be minted to this address on Base Mainnet.</span>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <label class="form-label" style="margin-bottom: 0;">AMOUNT TO BRIDGE (DOOM):</label>
+              <a href="#" onclick="setMaxBridge(); return false;" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary); text-decoration: none;">MAX ALL</a>
+            </div>
+            <input type="number" id="bridge-amount" class="form-input" placeholder="0.0" step="0.00000001" min="0.00000001">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">DESTINATION VAULT:</label>
+            <input type="text" class="form-input" value="doom1vault000000000000000000000000000000 (1:1 Reserve)" readonly style="background: #121217; color: var(--text-muted); font-size: 11px;">
+          </div>
+
+          <button id="btn-submit-bridge" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #0052ff 0%, #0037a8 100%); border-color: rgba(0, 82, 255, 0.4);">
+            ⚡ Lock DOOM &amp; Mint wDOOM on Base
+          </button>
         </div>
 
         <!-- TAB: BACKUP -->
@@ -540,6 +584,7 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById('tab-receive').style.display = 'none';
       document.getElementById('tab-send').style.display = 'none';
+      document.getElementById('tab-bridge').style.display = 'none';
       document.getElementById('tab-backup').style.display = 'none';
 
       if (name === 'receive') {
@@ -547,6 +592,9 @@
         event.target.classList.add('active');
       } else if (name === 'send') {
         document.getElementById('tab-send').style.display = 'block';
+        event.target.classList.add('active');
+      } else if (name === 'bridge') {
+        document.getElementById('tab-bridge').style.display = 'block';
         event.target.classList.add('active');
       } else if (name === 'backup') {
         document.getElementById('tab-backup').style.display = 'block';
@@ -601,6 +649,11 @@
     function setMaxSend() {
       const maxVal = Math.max(0, currentBalance - 0.001);
       document.getElementById('send-amount').value = maxVal > 0 ? maxVal.toFixed(8) : "0";
+    }
+
+    function setMaxBridge() {
+      const maxVal = Math.max(0, currentBalance - 0.001);
+      document.getElementById('bridge-amount').value = maxVal > 0 ? maxVal.toFixed(8) : "0";
     }
 
     function disconnectWallet() {
@@ -719,6 +772,71 @@
         showAlert(`Error: ${e.message}`, true);
       } finally {
         btn.innerText = "⚡ Sign & Broadcast Transaction";
+        btn.disabled = false;
+      }
+    });
+
+    // BRIDGE TO BASE (100% CLIENT-SIDE SIGNING)
+    document.getElementById('btn-submit-bridge').addEventListener('click', async () => {
+      const evmAddr = document.getElementById('bridge-evm-recipient').value.trim();
+      const amount = parseFloat(document.getElementById('bridge-amount').value);
+
+      if (!evmAddr || !evmAddr.startsWith('0x') || evmAddr.length !== 42) {
+        showAlert("Please enter a valid 42-character Base EVM address starting with 0x", true);
+        return;
+      }
+      if (isNaN(amount) || amount <= 0) {
+        showAlert("Please enter a valid bridge amount greater than 0", true);
+        return;
+      }
+      if (!currentWallet.privateKey) {
+        showAlert("Cannot bridge: private key is not loaded in memory for this address. Please import using your Private Key hex.", true);
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-bridge');
+      btn.innerText = "Signing Vault Deposit Locally...";
+      btn.disabled = true;
+
+      try {
+        const utxoRes = await fetch(`/wallet/${currentWallet.address}/utxos`);
+        if (!utxoRes.ok) {
+          showAlert("Failed to query UTXOs from node ledger", true);
+          return;
+        }
+        const utxoData = await utxoRes.json();
+        const utxos = utxoData.utxos || [];
+
+        btn.innerText = "Signing inputs (secp256k1)...";
+        const signedTx = DoomsdayCrypto.signTransaction({
+          fromAddress: currentWallet.address,
+          privateKeyHex: currentWallet.privateKey,
+          toAddress: 'doom1vault000000000000000000000000000000',
+          amountDoom: amount,
+          feeDoom: 0.001,
+          utxos: utxos,
+          extraData: evmAddr
+        });
+
+        btn.innerText = "Broadcasting to reserve vault...";
+        const res = await fetch('/tx/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transaction: signedTx })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showAlert(`✓ Bridge Deposit Confirmed! TXID: ${data.txid}. The Relayer daemon will mint 1:1 wDOOM on Base to ${evmAddr}!`);
+          document.getElementById('bridge-amount').value = '';
+          setTimeout(refreshBalance, 2000);
+        } else {
+          showAlert(`Bridge deposit rejected: ${data.detail || 'Node rejected'}`, true);
+        }
+      } catch (e) {
+        showAlert(`Error: ${e.message}`, true);
+      } finally {
+        btn.innerText = "⚡ Lock DOOM & Mint wDOOM on Base";
         btn.disabled = false;
       }
     });

@@ -146,6 +146,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const url = config.node_url || 'http://localhost:8334';
       window.doomsdayAPI.openExternal(url);
     };
+    const btnOpenWallet = document.getElementById('btn-open-wallet');
+    if (btnOpenWallet) {
+      btnOpenWallet.onclick = () => {
+        const url = config.node_url || 'http://localhost:8334';
+        window.doomsdayAPI.openExternal(`${url}/wallet`);
+      };
+    }
     const btnOpenDex = document.getElementById('btn-open-dex');
     if (btnOpenDex) {
       btnOpenDex.onclick = () => {

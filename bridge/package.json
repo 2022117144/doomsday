@@ -12,6 +12,8 @@
     "launch:dry-run": "node launch_uniswap_pool.js --dry-run",
     "launch:mainnet": "node launch_uniswap_pool.js",
     "launch:sepolia": "node launch_uniswap_pool.js --sepolia",
+    "bridge:relayer": "node bridge_relayer.js",
+    "verify:contract": "node verify_contract.js",
     "deploy:sepolia": "node deploy.js",
     "deploy:mainnet": "node deploy.js --mainnet"
   },

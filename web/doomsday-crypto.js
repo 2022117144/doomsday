@@ -325,7 +325,7 @@
      * Locally sign a raw transaction without sending private key to any server
      */
     signTransaction: function (txParams) {
-      const { fromAddress, privateKeyHex, toAddress, amountDoom, feeDoom = 0.001, utxos } = txParams;
+      const { fromAddress, privateKeyHex, toAddress, amountDoom, feeDoom = 0.001, utxos, extraData = '' } = txParams;
       const wallet = this.getWalletFromKey(privateKeyHex);
       if (wallet.address !== fromAddress) {
         throw new Error('Private key does not correspond to the sender address');
@@ -386,7 +386,7 @@
 
       // Calculate final TXID
       const txSummary = {
-        extra_data: '',
+        extra_data: extraData || '',
         inputs: inputs.map(inp => ({ txid: inp.txid, vout: inp.vout })),
         is_coinbase: false,
         outputs: outputs.map(out => ({ amount: out.amount, recipient: out.recipient })),
@@ -401,7 +401,7 @@
         outputs: outputs,
         timestamp: timestamp,
         is_coinbase: false,
-        extra_data: ''
+        extra_data: extraData || ''
       };
     }
   };

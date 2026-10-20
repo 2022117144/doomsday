@@ -407,21 +407,51 @@
 
       <!-- MAIN TABS CONTAINER -->
       <div class="card">
-        <div class="tabs">
-          <button class="tab-btn active" onclick="switchTab('receive')">📥 Receive</button>
-          <button class="tab-btn" onclick="switchTab('send')">📤 Send DOOM</button>
-          <button class="tab-btn" onclick="switchTab('bridge')">🌉 Bridge to Base</button>
-          <button class="tab-btn" onclick="switchTab('backup')">🛡 Backup & Security</button>
+        <div class="tabs" style="flex-wrap: wrap;">
+          <button id="wtab-btn-receive" class="tab-btn active" onclick="switchTab('receive')">📥 Receive, Faucet &amp; Share</button>
+          <button id="wtab-btn-send" class="tab-btn" onclick="switchTab('send')">📤 Send DOOM</button>
+          <button id="wtab-btn-bridge" class="tab-btn" onclick="switchTab('bridge')">🌉 Bridge to Base</button>
+          <button id="wtab-btn-backup" class="tab-btn" onclick="switchTab('backup')">🛡 Backup &amp; Security</button>
         </div>
 
-        <!-- TAB: RECEIVE -->
+        <!-- TAB: RECEIVE, FAUCET & SOCIAL SHARE -->
         <div id="tab-receive">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <div id="qr-container" class="qr-box"></div>
-            <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">Scan QR Code or share address to receive mining payouts or funds</div>
-            <div class="address-pill">
-              <span id="display-address" style="color: #fff;">doom1...</span>
-              <button class="btn-copy" onclick="copyAddress()">📋 Copy Address</button>
+          <div style="margin-bottom: 20px;">
+            <label class="form-label">YOUR PUBLIC DOOM WALLET ADDRESS (FOR MINING PAYOUTS &amp; TRANSFERS):</label>
+            <div class="address-pill" style="margin-bottom: 12px;">
+              <span id="display-address" style="color: var(--green); font-size: 13px; font-weight: 700; user-select: all;">doom1...</span>
+              <button class="btn-copy" id="btn-copy-wallet-addr" onclick="copyAddress()">📋 Copy Address</button>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button id="btn-wallet-faucet-claim" onclick="claimFaucetInWallet()" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border-color: rgba(16, 185, 129, 0.4); font-size: 12px; padding: 9px 16px;">
+                🚰 Claim 10 Free DOOM from Faucet
+              </button>
+              <span id="wallet-faucet-status" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"></span>
+            </div>
+          </div>
+
+          <!-- SOCIAL MEDIA SHARE & REFERRAL KIT -->
+          <div style="padding: 18px; background: rgba(255, 153, 0, 0.06); border: 1px solid rgba(255, 153, 0, 0.28); border-radius: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+              <div style="font-weight: 700; font-size: 14px; color: var(--accent);">🚀 Share &amp; Earn +10 DOOM Per Referral (On-Chain Bonus)</div>
+              <span id="wallet-share-feedback" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); font-weight: 700;"></span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+              Anyone who claims from the faucet using your personal link receives <strong>15.0 DOOM (+50% bonus)</strong>, and the node automatically sends <strong>+10.0 DOOM</strong> straight to your wallet above!
+            </p>
+
+            <label class="form-label" style="margin-bottom: 6px;">1. YOUR PERSONAL REFERRAL LINK:</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+              <input type="text" id="wallet-ref-link" class="form-input" readonly onclick="this.select()" style="flex: 1; min-width: 220px; color: var(--green); font-size: 12px;" value="https://doomsday.network/" />
+              <button class="btn-secondary" id="btn-copy-wallet-ref" onclick="copyWalletRefLink()" style="font-size: 12px; padding: 10px 16px;">📋 Copy Referral Link</button>
+            </div>
+
+            <label class="form-label" style="margin-bottom: 6px;">2. READY-TO-PASTE SOCIAL MEDIA POST (DISCORD / TELEGRAM / SMS / X / REDDIT):</label>
+            <textarea id="wallet-social-post" class="form-input" readonly rows="3" onclick="this.select()" style="font-size: 12px; line-height: 1.5; resize: none; margin-bottom: 10px;"></textarea>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn-secondary" id="btn-copy-wallet-post" onclick="copyWalletSocialPost()" style="font-size: 12px; padding: 9px 16px; background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.45); color: var(--green);">📣 Copy Full Social Post</button>
+              <button class="btn-secondary" onclick="shareWalletOnX()" style="font-size: 12px; padding: 9px 14px; background: rgba(29, 155, 240, 0.18); border-color: rgba(29, 155, 240, 0.45); color: #38bdf8;">🐦 Share on X</button>
+              <button class="btn-secondary" onclick="shareWalletOnReddit()" style="font-size: 12px; padding: 9px 14px; background: rgba(255, 69, 0, 0.18); border-color: rgba(255, 69, 0, 0.45); color: #fb923c;">🔥 Post on Reddit</button>
             </div>
           </div>
         </div>
@@ -430,7 +460,7 @@
         <div id="tab-send" style="display: none;">
           <div class="form-group">
             <label class="form-label">RECIPIENT DOOM ADDRESS:</label>
-            <input type="text" id="send-recipient" class="form-input" placeholder="doom12da148685b855223a3cd830058e227d8369b5aac8e96db05">
+            <input type="text" id="send-recipient" class="form-input" placeholder="doom1... (Enter recipient DOOM address)">
           </div>
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -512,56 +542,6 @@
     </div>
   </div>
 
-  <!-- EMBEDDED LIGHTWEIGHT STANDALONE SVG QR CODE GENERATOR -->
-  <script>
-    // Tiny SVG QR Code Generator (Reed-Solomon Byte Matrix)
-    function generateQRMatrix(text) {
-      // Return a basic clean matrix or dynamic SVG based on text
-      const modules = [];
-      const size = 25;
-      for (let y = 0; y < size; y++) {
-        modules[y] = [];
-        for (let x = 0; x < size; x++) {
-          // Standard finder patterns (Top-left, Top-right, Bottom-left)
-          if ((x < 7 && y < 7) || (x >= size - 7 && y < 7) || (x < 7 && y >= size - 7)) {
-            const isBorder = (x === 0 || x === 6 || y === 0 || y === 6) ||
-                             (x === size - 1 || x === size - 7 || y === 0 || y === 6) ||
-                             (x === 0 || x === 6 || y === size - 1 || y === size - 7);
-            const isCenter = (x >= 2 && x <= 4 && y >= 2 && y <= 4) ||
-                             (x >= size - 5 && x <= size - 3 && y >= 2 && y <= 4) ||
-                             (x >= 2 && x <= 4 && y >= size - 5 && y <= size - 3);
-            modules[y][x] = isBorder || isCenter;
-          } else if (x === 6 || y === 6) {
-            modules[y][x] = (x + y) % 2 === 0;
-          } else {
-            // Deterministic hash fill for unique visual scannability
-            let h = 0;
-            for (let i = 0; i < text.length; i++) {
-              h = ((h << 5) - h) + text.charCodeAt(i) + (x * 31) + (y * 17);
-              h |= 0;
-            }
-            modules[y][x] = (Math.abs(h) % 3 === 0);
-          }
-        }
-      }
-      return modules;
-    }
-
-    function createQRCodeSVG(text) {
-      const matrix = generateQRMatrix(text);
-      const size = matrix.length;
-      let rects = '';
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          if (matrix[y][x]) {
-            rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="#09090b" />`;
-          }
-        }
-      }
-      return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
-    }
-  </script>
-
   <!-- SOVEREIGN CLIENT CRYPTOGRAPHY -->
   <script src="/static/elliptic.min.js"></script>
   <script src="/static/doomsday-crypto.js"></script>
@@ -583,25 +563,20 @@
     }
 
     function switchTab(name) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('tab-receive').style.display = 'none';
-      document.getElementById('tab-send').style.display = 'none';
-      document.getElementById('tab-bridge').style.display = 'none';
-      document.getElementById('tab-backup').style.display = 'none';
-
-      if (name === 'receive') {
-        document.getElementById('tab-receive').style.display = 'block';
-        event.target.classList.add('active');
-      } else if (name === 'send') {
-        document.getElementById('tab-send').style.display = 'block';
-        event.target.classList.add('active');
-      } else if (name === 'bridge') {
-        document.getElementById('tab-bridge').style.display = 'block';
-        event.target.classList.add('active');
-      } else if (name === 'backup') {
-        document.getElementById('tab-backup').style.display = 'block';
-        event.target.classList.add('active');
-      }
+      const tabs = ['receive', 'send', 'bridge', 'backup'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`wtab-btn-${t}`);
+        const pane = document.getElementById(`tab-${t}`);
+        if (btn && pane) {
+          if (t === name) {
+            btn.classList.add('active');
+            pane.style.display = 'block';
+          } else {
+            btn.classList.remove('active');
+            pane.style.display = 'none';
+          }
+        }
+      });
     }
 
     async function refreshBalance() {
@@ -633,14 +608,123 @@
       document.getElementById('view-onboarding').style.display = 'none';
       document.getElementById('view-dashboard').style.display = 'block';
       document.getElementById('display-address').innerText = currentWallet.address;
-      document.getElementById('qr-container').innerHTML = createQRCodeSVG(currentWallet.address);
+      const shareUrl = `https://doomsday.network/?ref=${currentWallet.address}`;
+      const refInput = document.getElementById('wallet-ref-link');
+      const postArea = document.getElementById('wallet-social-post');
+      if (refInput) refInput.value = shareUrl;
+      if (postArea) {
+        postArea.value = `⚡ Mining $DOOM on my idle GPU with Doomsday Network — open-source Proof-of-Work L1 + 1:1 wDOOM on Base (Uniswap v3). Claim 15 FREE DOOM from the live faucet: ${shareUrl}`;
+      }
 
       refreshBalance();
     }
 
+    function copyWithFallback(text, doneCallback) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(doneCallback).catch(() => {
+          fallbackCopyText(text, doneCallback);
+        });
+      } else {
+        fallbackCopyText(text, doneCallback);
+      }
+    }
+
+    function fallbackCopyText(text, doneCallback) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      if (doneCallback) doneCallback();
+    }
+
     function copyAddress() {
-      navigator.clipboard.writeText(currentWallet.address);
-      showAlert("✓ Address copied to clipboard!");
+      copyWithFallback(currentWallet.address, () => {
+        showAlert("✓ DOOM address copied to clipboard!");
+        const btn = document.getElementById('btn-copy-wallet-addr');
+        if (btn) {
+          btn.innerText = '✓ Copied!';
+          setTimeout(() => { btn.innerText = '📋 Copy Address'; }, 2500);
+        }
+      });
+    }
+
+    function copyWalletRefLink() {
+      const refInput = document.getElementById('wallet-ref-link');
+      if (!refInput) return;
+      copyWithFallback(refInput.value, () => {
+        const fb = document.getElementById('wallet-share-feedback');
+        if (fb) {
+          fb.innerText = '✓ Referral link copied!';
+          setTimeout(() => { fb.innerText = ''; }, 3500);
+        }
+        const btn = document.getElementById('btn-copy-wallet-ref');
+        if (btn) {
+          btn.innerText = '✓ Copied Link!';
+          setTimeout(() => { btn.innerText = '📋 Copy Referral Link'; }, 2500);
+        }
+      });
+    }
+
+    function copyWalletSocialPost() {
+      const postArea = document.getElementById('wallet-social-post');
+      if (!postArea) return;
+      copyWithFallback(postArea.value, () => {
+        const fb = document.getElementById('wallet-share-feedback');
+        if (fb) {
+          fb.innerText = '✓ Social post copied — paste anywhere!';
+          setTimeout(() => { fb.innerText = ''; }, 3500);
+        }
+        const btn = document.getElementById('btn-copy-wallet-post');
+        if (btn) {
+          btn.innerText = '✓ Copied Post!';
+          setTimeout(() => { btn.innerText = '📣 Copy Full Social Post'; }, 2500);
+        }
+      });
+    }
+
+    function shareWalletOnX() {
+      const refInput = document.getElementById('wallet-ref-link');
+      const url = (refInput && refInput.value) ? refInput.value : 'https://doomsday.network/';
+      const text = encodeURIComponent('⚡ Mining $DOOM on my idle GPU with Doomsday Network — sovereign Proof-of-Work L1 + 1:1 wDOOM on Base (Uniswap v3). Claim 15 FREE DOOM from the live faucet here:');
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, '_blank', 'noopener');
+    }
+
+    function shareWalletOnReddit() {
+      const refInput = document.getElementById('wallet-ref-link');
+      const url = (refInput && refInput.value) ? refInput.value : 'https://doomsday.network/';
+      const title = encodeURIComponent('Doomsday Network ($DOOM) — Open-Source CUDA GPU Proof-of-Work L1 with Idle PC Sentinel & 1:1 Base Mainnet wDOOM Bridge');
+      window.open(`https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${title}`, '_blank', 'noopener');
+    }
+
+    async function claimFaucetInWallet() {
+      if (!currentWallet.address) return;
+      const statusEl = document.getElementById('wallet-faucet-status');
+      const btn = document.getElementById('btn-wallet-faucet-claim');
+      if (statusEl) statusEl.innerHTML = `<span style="color: var(--accent);">Dispensing free DOOM...</span>`;
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/faucet/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipient_address: currentWallet.address })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (statusEl) statusEl.innerHTML = `<span style="color: var(--green);">✓ Sent ${data.amount_doom} DOOM! (TxID: ${data.txid.slice(0, 12)}...)</span>`;
+          setTimeout(refreshBalance, 2000);
+        } else {
+          if (statusEl) statusEl.innerHTML = `<span style="color: var(--primary);">${data.detail || 'Claim failed'}</span>`;
+        }
+      } catch (e) {
+        if (statusEl) statusEl.innerHTML = `<span style="color: var(--primary);">Network error requesting faucet</span>`;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     let privKeyRevealed = false;

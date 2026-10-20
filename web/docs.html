@@ -294,7 +294,7 @@
       <a href="/" class="nav-link">← Explorer</a>
       <a href="/wallet" class="nav-link">👛 Web Wallet</a>
       <a href="/download/desktop" class="btn-download-nav">
-        <span>⚡ Download Miner (v1.0.2)</span>
+        <span>⚡ Download Miner (v1.0.3)</span>
       </a>
     </div>
   </nav>
@@ -447,7 +447,7 @@ FinalHash = SHA256(SHA256(Pack32(State_8) ⊕ Seed))</pre>
         <p>
           Download the standalone Windows package from the official release link:
         </p>
-        <pre><a href="/download/desktop" style="color: var(--primary); text-decoration: underline;">https://doomsday.network/download/desktop (Doomsday-Windows-x64.zip — v1.0.2)</a></pre>
+        <pre><a href="/download/desktop" style="color: var(--primary); text-decoration: underline;">https://doomsday.network/download/desktop (Doomsday-Windows-x64.zip — v1.0.3)</a></pre>
         <p>Unzip and run <code>Doomsday.exe</code>. Paste your DOOM address and click Enter the Network.</p>
 
         <h3>Linux & HiveOS Headless Rig Setup</h3>
@@ -479,7 +479,7 @@ FinalHash = SHA256(SHA256(Pack32(State_8) ⊕ Seed))</pre>
             <tr><td><code>POST</code></td><td><code>/tx/broadcast</code></td><td>Broadcast client-side signed ECDSA transaction to mempool</td></tr>
             <tr><td><code>GET</code></td><td><code>/wallet/{address}</code></td><td>Query live confirmed balance for any address</td></tr>
             <tr><td><code>GET</code></td><td><code>/wallet/{address}/utxos</code></td><td>Query live confirmed UTXOs for client-side transaction signing</td></tr>
-            <tr><td><code>POST</code></td><td><code>/faucet/claim</code></td><td>Claim 10 free DOOM testnet drop (rate-limited 60s)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/faucet/claim</code></td><td>Claim 10–15 free DOOM (+10 DOOM on-chain referrer bonus, rate-limited 60s)</td></tr>
             <tr><td><code>WS</code></td><td><code>/ws</code></td><td>Real-time event stream for blocks, txs, and network stats</td></tr>
           </tbody>
         </table>

@@ -405,7 +405,15 @@ async def request_pool_payout(req: FaucetClaimRequest):
 
 @app.get("/p2p/status")
 def get_p2p_status():
-    return p2p.get_stats()
+    stats = p2p.get_stats()
+    masked_peers = []
+    for p in stats.get("peers", []):
+        d = dict(p)
+        d["address"] = _mask_peer_address(d.get("address", ""))
+        d.pop("url", None)
+        masked_peers.append(d)
+    stats["peers"] = masked_peers
+    return stats
 
 
 @app.post("/p2p/handshake")

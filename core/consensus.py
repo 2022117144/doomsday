@@ -9,6 +9,10 @@ HALVING_INTERVAL = 210_000  # Halving every 210,000 blocks (50 * 210,000 * 2 = 2
 INITIAL_REWARD_SPARKS = 50 * COIN
 ASERT_HALF_LIFE = 240  # 4 minutes smoothing factor (12 blocks)
 
+# Historical consensus upgrade activation heights (Mainnet)
+EDA_ACTIVATION_HEIGHT = 341
+ASERT_V2_ACTIVATION_HEIGHT = 581
+
 
 def get_block_reward(height: int) -> int:
     """Calculate mining subsidy for given block height with halving schedule."""
@@ -28,22 +32,39 @@ def calculate_next_bits(prev_block: Block, anchor_block: Block, current_timestam
     if prev_block.height < 1:
         return INITIAL_BITS
 
-    effective_ts = current_timestamp if current_timestamp is not None else prev_block.header.timestamp
-    effective_height = prev_block.height + (1 if current_timestamp is not None else 0)
+    next_height = prev_block.height + 1
 
-    time_delta = effective_ts - anchor_block.header.timestamp
-    height_delta = effective_height - anchor_block.height
-    expected_time = height_delta * TARGET_BLOCK_TIME
+    # Preserve historical consensus verification for blocks mined prior to ASERT v2 activation (#581)
+    if next_height < ASERT_V2_ACTIVATION_HEIGHT:
+        if (
+            next_height >= EDA_ACTIVATION_HEIGHT
+            and current_timestamp is not None
+            and (current_timestamp - prev_block.header.timestamp) > (ASERT_HALF_LIFE * 2)
+        ):
+            return INITIAL_BITS
 
-    # Drift in seconds ahead or behind schedule
-    drift = time_delta - expected_time
+        time_delta = prev_block.header.timestamp - anchor_block.header.timestamp
+        height_delta = prev_block.height - anchor_block.height
+        expected_time = height_delta * TARGET_BLOCK_TIME
+        drift = time_delta - expected_time
+        exponent = max(-3.0, min(3.0, drift / float(ASERT_HALF_LIFE)))
+    else:
+        effective_ts = current_timestamp if current_timestamp is not None else prev_block.header.timestamp
+        effective_height = prev_block.height + (1 if current_timestamp is not None else 0)
 
-    # Exponent for smooth 2^(drift / half_life)
-    exponent = drift / float(ASERT_HALF_LIFE)
+        time_delta = effective_ts - anchor_block.header.timestamp
+        height_delta = effective_height - anchor_block.height
+        expected_time = height_delta * TARGET_BLOCK_TIME
 
-    # Bound exponent: allow up to 256x difficulty increase (-8.0) against mega-miner bursts,
-    # and up to 65536x relaxation (+16.0, clamped to MAX_TARGET) when idle rigs pause.
-    exponent = max(-8.0, min(16.0, exponent))
+        # Drift in seconds ahead or behind schedule
+        drift = time_delta - expected_time
+
+        # Exponent for smooth 2^(drift / half_life)
+        exponent = drift / float(ASERT_HALF_LIFE)
+
+        # Bound exponent: allow up to 256x difficulty increase (-8.0) against mega-miner bursts,
+        # and up to 65536x relaxation (+16.0, clamped to MAX_TARGET) when idle rigs pause.
+        exponent = max(-8.0, min(16.0, exponent))
 
     anchor_target = bits_to_target(anchor_block.header.bits)
     factor = math.pow(2.0, exponent)

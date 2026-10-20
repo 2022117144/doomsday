@@ -35,14 +35,16 @@ Traditional crypto mining turns your PC into a jet engine, interferes with gamin
 [table]
 [tr][td][b]Coin Name[/b][/td][td]Doomsday Network[/td][/tr]
 [tr][td][b]Ticker[/b][/td][td][b]DOOM[/b][/td][/tr]
-[tr][td][b]Algorithm[/b][/td][td]DoomHash (Argon2id Memory-Hard + SHA-256)[/td][/tr]
-[tr][td][b]Block Time[/b][/td][td]60 Seconds[/td][/tr]
+[tr][td][b]Algorithm[/b][/td][td]DoomHash (64-Bit Register Matrix + Golden Ratio + SHA-256)[/td][/tr]
+[tr][td][b]Block Time[/b][/td][td]20 Seconds[/td][/tr]
 [tr][td][b]Initial Block Subsidy[/b][/td][td]50.0 DOOM[/td][/tr]
 [tr][td][b]Max Supply[/b][/td][td]21,000,000 DOOM (Hard Cap)[/td][/tr]
-[tr][td][b]Halving Interval[/b][/td][td]Every 210,000 Blocks (~4 Years)[/td][/tr]
+[tr][td][b]Halving Interval[/b][/td][td]Every 210,000 Blocks (~48.6 Days)[/td][/tr]
 [tr][td][b]Smallest Unit[/b][/td][td]1 Spark = 0.00000001 DOOM (8 Decimals)[/td][/tr]
-[tr][td][b]Address Format[/b][/td][td]Base58Check with [code]doom1[/code] prefix[/td][/tr]
+[tr][td][b]Address Format[/b][/td][td]Base16Check with [code]doom1[/code] prefix (RIPEMD160 + SHA-256)[/td][/tr]
 [tr][td][b]Difficulty Retarget[/b][/td][td]ASERT (Continuous per block)[/td][/tr]
+[tr][td][b]Base Mainnet wDOOM[/b][/td][td][code]0x623c84A5E04bF715018203334b0eFE41696eBC3E[/code][/td][/tr]
+[tr][td][b]Uniswap v3 Pool[/b][/td][td][code]0xf7217329574249d7b389404aECF2C582662F3659[/code][/td][/tr]
 [tr][td][b]Genesis Hash[/b][/td][td][code]00000d07471c6ac9087230a51565953a31560592fd591cbd5c4a5fe0a3f1585f[/code][/td][/tr]
 [/table]
 
@@ -51,8 +53,8 @@ Traditional crypto mining turns your PC into a jet engine, interferes with gamin
 [size=14pt][b]⛏️ How to Start Mining[/b][/size]
 
 [b]Option 1: Windows Desktop GUI (Recommended)[/b]
-1. Download the official client from [url=https://github.com/doomsday-network/doomsday/releases]GitHub Releases[/url]: [code]Doomsday-v1.0.0-Windows-x64.zip[/code]
-2. Verify SHA-256 checksum: [code]e629be9a812d7c25395dfa56d6f784ea5ba01fe05c0dff1d1579a50241d1205e[/code]
+1. Download the official client from [url=https://github.com/doomsday-network/doomsday/releases]GitHub Releases[/url]: [code]Doomsday-Windows-x64.zip[/code] (v1.0.1)
+2. Verify SHA-256 checksum: [code]014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba[/code]
 3. Extract and launch [code]Doomsday.exe[/code].
 4. Enter your DOOM payout address, set your idle timeout (default: 60s), and minimize. It will quietly mine whenever your PC is idle!
 

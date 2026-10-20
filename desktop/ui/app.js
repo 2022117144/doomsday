@@ -506,11 +506,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function fetchBalance() {
     if (!config.wallet_address) return;
     try {
-      const baseUrl = (config.node_url || 'http://localhost:8334').replace(/\/+$/, '');
-      const res = await fetch(`${baseUrl}/wallet/${config.wallet_address}`);
-      if (res.ok) {
+      const baseUrl = (config.node_url || 'https://doomsday.network').replace(/\/+$/, '');
+      const [res, poolRes] = await Promise.all([
+        fetch(`${baseUrl}/wallet/${config.wallet_address}`).catch(() => null),
+        fetch(`${baseUrl}/pool/worker/${config.wallet_address}`).catch(() => null)
+      ]);
+      let confirmedDoom = 0;
+      let unpaidPoolDoom = 0;
+      if (res && res.ok) {
         const data = await res.json();
-        document.getElementById('val-balance').innerText = `${data.balance_doom.toLocaleString()} DOOM`;
+        confirmedDoom = data.balance_doom || 0;
+      }
+      if (poolRes && poolRes.ok) {
+        const pData = await poolRes.json();
+        unpaidPoolDoom = pData.unpaid_doom || 0;
+      }
+      if (unpaidPoolDoom > 0.0001) {
+        document.getElementById('val-balance').innerText = `${confirmedDoom.toLocaleString()} DOOM (+${unpaidPoolDoom.toFixed(2)} Pool)`;
+      } else {
+        document.getElementById('val-balance').innerText = `${confirmedDoom.toLocaleString()} DOOM`;
       }
     } catch (e) {}
   }

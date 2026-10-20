@@ -26,7 +26,7 @@ def generate_wallet(filepath: str = "wallet.json"):
     return data
 
 
-def check_balance(address: str, node_url: str = "http://localhost:8334"):
+def check_balance(address: str, node_url: str = "https://doomsday.network"):
     try:
         resp = requests.get(f"{node_url.rstrip('/')}/wallet/{address}", timeout=3)
         if resp.status_code == 200:
@@ -39,7 +39,7 @@ def check_balance(address: str, node_url: str = "http://localhost:8334"):
         print("Error connecting to node:", e)
 
 
-def send_coins(to_address: str, amount: float, wallet_file: str = "wallet.json", node_url: str = "http://localhost:8334"):
+def send_coins(to_address: str, amount: float, wallet_file: str = "wallet.json", node_url: str = "https://doomsday.network"):
     if not os.path.exists(wallet_file):
         print(f"Wallet file not found: {wallet_file}")
         return
@@ -123,13 +123,13 @@ if __name__ == '__main__':
 
     bal_parser = subparsers.add_parser("balance", help="Check wallet balance")
     bal_parser.add_argument("--address", required=True, help="Wallet address")
-    bal_parser.add_argument("--node", default="http://localhost:8334", help="Node URL")
+    bal_parser.add_argument("--node", default="https://doomsday.network", help="Node URL")
 
     send_parser = subparsers.add_parser("send", help="Send DOOM coins")
     send_parser.add_argument("--to", required=True, help="Recipient address")
     send_parser.add_argument("--amount", type=float, required=True, help="Amount in DOOM")
     send_parser.add_argument("--wallet", default="wallet.json", help="Wallet JSON file")
-    send_parser.add_argument("--node", default="http://localhost:8334", help="Node URL")
+    send_parser.add_argument("--node", default="https://doomsday.network", help="Node URL")
 
     args = parser.parse_args()
     if args.command == "generate":

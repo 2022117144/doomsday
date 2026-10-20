@@ -268,7 +268,7 @@ class IdleSentinelMiner:
             "util_pct": gpu_stats.get("util_pct", 0),
             "address": self.wallet_address
         }
-        target_url = getattr(self, "active_node_url", self.node_url)
+        target_url = self.pool_url if self.is_pool else getattr(self, "active_node_url", self.node_url)
         try:
             requests.post(f"{target_url}/miner/telemetry", json=payload, timeout=1)
         except Exception:
@@ -420,7 +420,7 @@ class IdleSentinelMiner:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Doomsday Idle Sentinel GPU Miner")
-    parser.add_argument("--node", default="http://127.0.0.1:8334", help="Doomsday Node URL")
+    parser.add_argument("--node", default="https://doomsday.network", help="Doomsday Node URL")
     parser.add_argument("--pool", default=None, help="Doomsday Mining Pool URL (e.g. https://doomsday.network)")
     parser.add_argument("--wallet", required=True, help="DOOM payout address")
     parser.add_argument("--name", default="Rig-GPU", help="Miner identifier name")

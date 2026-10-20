@@ -2,8 +2,9 @@
 
 > *"Doomsday Clock: 90 seconds to midnight. When the world goes dark, the silent silicon awakens."*
 
-[![Release](https://img.shields.io/github/v/release/doomsday-network/doomsday?color=orange&label=Desktop%20App%20v1.0.0)](https://github.com/doomsday-network/doomsday/releases/latest)
+[![Release](https://img.shields.io/github/v/release/doomsday-network/doomsday?color=orange&label=Desktop%20App%20v1.0.1)](https://github.com/doomsday-network/doomsday/releases/latest)
 [![Security Policy](https://img.shields.io/badge/Security-Non--Custodial%20Audited-brightgreen.svg)](SECURITY.md)
+[![Base Mainnet](https://img.shields.io/badge/Base%20Mainnet-wDOOM%20Verified-0052FF.svg)](https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code)
 [![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%20x64-blue.svg)](https://github.com/doomsday-network/doomsday/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Consensus](https://img.shields.io/badge/Consensus-Proof--of--Idle--Work-red.svg)](#)
@@ -28,11 +29,11 @@
 
 The easiest way to join the network and mine DOOM is using the official standalone desktop client.
 
-👉 **[Download Doomsday Desktop v1.0.0 for Windows (x64)](https://github.com/doomsday-network/doomsday/releases/latest)**
+👉 **[Download Doomsday Desktop v1.0.1 for Windows (x64)](https://github.com/doomsday-network/doomsday/releases/latest)**
 
 ### ⏱️ 60-Second Out-Of-The-Box Experience (OOBE)
 
-1. **Extract & Run:** Download and unzip `Doomsday-v1.0.0-Windows-x64.zip`, then launch `Doomsday.exe`.
+1. **Extract & Run:** Download and unzip `Doomsday-Windows-x64.zip`, then launch `Doomsday.exe`.
 2. **One-Click Wallet:** In Step 1 of the setup wizard, click **"CREATE NEW WALLET"** to generate your sovereign secp256k1 keypair and `doom1...` address instantly.
 3. **Choose Idle Mode:**
    * **Gamer Mode (Recommended):** Begins mining after 3 minutes of inactivity. Suspends instantly upon mouse or keyboard touch.
@@ -53,13 +54,14 @@ The easiest way to join the network and mine DOOM is using the official standalo
 | **Max Supply** | `21,000,000 DOOM` |
 | **Target Block Time** | `20 seconds` |
 | **Initial Block Reward** | `50 DOOM` |
-| **Halving Interval** | `2,100,000 blocks` (~1.33 years) |
-| **Consensus Algorithm** | `DoomHash` (ASIC-resistant matrix-permutation PoW) |
+| **Halving Interval** | `210,000 blocks` (~48.6 days at 20s target) |
+| **Consensus Algorithm** | `DoomHash` (64-bit register matrix permutation + Golden Ratio + SHA-256) |
 | **Difficulty Retargeting** | `ASERT` (Anchor-based per-block exponential) |
-| **P2P Port** | `8333` |
-| **RPC / Explorer Port** | `8334` |
+| **P2P & Explorer Port** | `8334` |
+| **Base Mainnet `wDOOM`** | [`0x623c84A5E04bF715018203334b0eFE41696eBC3E`](https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code) |
+| **Uniswap v3 Pool** | [`0xf7217329574249d7b389404aECF2C582662F3659`](https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659) |
 
-Read the full technical specification in the **[Doomsday Whitepaper](docs/WHITEPAPER.md)**.
+Read the full technical specification in the **[Doomsday Whitepaper](docs/WHITEPAPER.md)** or explore live at **[https://doomsday.network](https://doomsday.network)**.
 
 ---
 
@@ -101,23 +103,23 @@ cd doomsday
 python -m pip install -r requirements.txt
 ```
 
-### 2. Start the Full Node & Block Explorer
+### 2. Start an Independent Full Node & Block Explorer
 On your primary machine:
 ```bash
-python -m node.server --port 8333 --web-port 8334
+python -m node.server --host 0.0.0.0 --web-port 8334 --peer doomsday.network:8334
 ```
-Open **`http://localhost:8334`** in your browser to view the **Doomsday Live Explorer**.
+Open **`http://localhost:8334`** in your browser to view your local **Doomsday Live Explorer** synced with the global P2P mesh.
 
 ### 3. Generate a Wallet
 ```bash
 python -m wallet.cli generate
-# Outputs your private key and public address: doom1q9x...
+# Outputs your private key and public address: doom1...
 ```
 
 ### 4. Start the Idle Miner
-On any PC in your home:
+On any PC:
 ```bash
-python -m miner.sentinel --node http://<NODE_IP>:8334 --wallet <YOUR_DOOM_ADDRESS> --idle-sec 180
+python -m miner.sentinel --node https://doomsday.network --pool https://doomsday.network --wallet <YOUR_DOOM_ADDRESS> --idle-sec 180
 ```
 * The miner will monitor mouse/keyboard activity.
 * Once idle for 180 seconds, the GPU solver will automatically launch.

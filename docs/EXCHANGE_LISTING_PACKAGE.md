@@ -16,12 +16,14 @@ This document contains all technical specifications, metadata, RPC configuration
 | **Initial / Current Circulating** | ~13,500 DOOM (100% Fair Launch) |
 | **Pre-mine / ICO / Private Sale** | **0.00% (Strictly Fair Launch)** |
 | **Developer Tax / Founder Reward**| **0.00% (All rewards go to block miners)** |
-| **Block Time Target** | 60 seconds |
+| **Block Time Target** | 20 seconds |
 | **Block Subsidy** | 50.0 DOOM per block |
-| **Halving Schedule** | Every 210,000 blocks (~4 years, Bitcoin model) |
+| **Halving Schedule** | Every 210,000 blocks (~48.6 days at 20s target) |
 | **Consensus Mechanism** | Proof-of-Idle-Work (PoIW) + ASERT Difficulty |
-| **Hashing Algorithm** | **DoomHash** (Memory-hard Argon2id + SHA-256) |
-| **Address Prefix / Format** | Base58Check with `doom1` prefix (RIPEMD160 + SHA-256) |
+| **Hashing Algorithm** | **DoomHash** (64-Bit Register Matrix + Golden Ratio + SHA-256) |
+| **Address Prefix / Format** | Base16Check with `doom1` prefix (RIPEMD160 + SHA-256) |
+| **Base Mainnet Wrapped Token (`wDOOM`)** | [`0x623c84A5E04bF715018203334b0eFE41696eBC3E`](https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code) |
+| **Uniswap v3 Liquidity Pool (Base)** | [`0xf7217329574249d7b389404aECF2C582662F3659`](https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659) |
 | **Genesis Hash** | `00000d07471c6ac9087230a51565953a31560592fd591cbd5c4a5fe0a3f1585f` |
 | **Genesis Message** | *"Doomsday Clock: 90 seconds to midnight. When the world goes dark, the silent silicon awakens."* |
 
@@ -76,14 +78,14 @@ MiningPoolStats tracks Proof-of-Work coins using standardized JSON polling endpo
 {
   "name": "Doomsday Network",
   "symbol": "DOOM",
-  "algorithm": "DoomHash (Argon2id + SHA256)",
+  "algorithm": "DoomHash (MatrixPermute64 + SHA256)",
   "website": "https://doomsday.network",
   "explorer": "https://doomsday.network",
   "whitepaper": "https://doomsday.network/docs",
   "github": "https://github.com/doomsday-network/doomsday",
   "discord": "https://discord.gg/doomsday",
   "coin_type": "POW",
-  "target_block_time_seconds": 60,
+  "target_block_time_seconds": 20,
   "difficulty_algorithm": "ASERT",
   "max_supply": 21000000,
   "block_reward": 50,

@@ -260,6 +260,51 @@ def get_pool_job(worker_address: str = "doom1miner000000000000000000000000000000
     return pool.get_job(worker_address, worker_name)
 
 
+async def process_auto_pool_payouts():
+    """Automatically distribute on-chain payouts to pool miners with >= 1.0 DOOM unpaid."""
+    eligible = {addr: amt for addr, amt in pool.unpaid_sparks.items() if amt >= int(1.0 * COIN) and addr != pool.pool_address}
+    if not eligible:
+        return
+    total_payout = sum(eligible.values())
+    avail = chain.get_balance(pool.pool_address)
+    if avail < total_payout:
+        return
+
+    from core.crypto import private_key_from_wif
+    priv = private_key_from_wif(pool_wallet["private_key"])
+    inputs = []
+    accum = 0
+    mempool_spent = chain.get_mempool_spent_outpoints()
+    for outpoint, (rcpt, amt) in chain.utxo_set.items():
+        if rcpt == pool.pool_address and outpoint not in mempool_spent:
+            txid, vout = outpoint.split(":")
+            inputs.append(TxInput(txid=txid, vout=int(vout)))
+            accum += amt
+            if accum >= total_payout:
+                break
+
+    if accum < total_payout:
+        return
+
+    outputs = [TxOutput(recipient=addr, amount=amt) for addr, amt in eligible.items()]
+    change = accum - total_payout
+    if change > 0:
+        outputs.append(TxOutput(recipient=pool.pool_address, amount=change))
+
+    tx = Transaction(inputs=inputs, outputs=outputs)
+    for idx in range(len(inputs)):
+        tx.sign_input(idx, priv)
+
+    ok, _ = chain.add_transaction_to_mempool(tx)
+    if ok:
+        for addr, amt in eligible.items():
+            pool.unpaid_sparks[addr] = 0
+            pool.total_paid_sparks[addr] = pool.total_paid_sparks.get(addr, 0) + amt
+        pool._save_state()
+        await broadcast_event("new_tx", tx.to_dict())
+        asyncio.create_task(p2p.broadcast_tx(tx))
+
+
 @app.post("/pool/submit")
 async def submit_pool_share(req: PoolSubmitRequest):
     res = pool.submit_share(
@@ -285,6 +330,8 @@ async def submit_pool_share(req: PoolSubmitRequest):
         })
         # Wire Gossip: Broadcast pool-discovered block to P2P mesh
         asyncio.create_task(p2p.broadcast_block(tip))
+        # Automatically pay out round contributors with >= 1.0 DOOM unpaid
+        await process_auto_pool_payouts()
 
     await broadcast_event("pool_stats", pool.get_stats())
     return res
@@ -338,6 +385,7 @@ async def request_pool_payout(req: FaucetClaimRequest):
 
     pool.unpaid_sparks[req.recipient_address] = 0
     pool.total_paid_sparks[req.recipient_address] = pool.total_paid_sparks.get(req.recipient_address, 0) + unpaid
+    pool._save_state()
 
     await broadcast_event("new_tx", tx.to_dict())
     await broadcast_event("pool_stats", pool.get_stats())

@@ -32,17 +32,17 @@ Doomsday integrates OS-level sleep suppression (`SetThreadExecutionState` with `
 
 ## 3. Cryptographic Specification
 
-### 3.1 DoomHash: Hybrid Memory-Hard Algorithm
-DoomHash combines high-throughput parallel SHA256 transform mixing with memory-hard Argon2id seed derivation:
+### 3.1 DoomHash: 64-Bit Register Matrix & SHA-256 Hybrid Algorithm
+DoomHash combines high-throughput parallel SHA-256 transform mixing with an 8-round 64-bit register matrix permutation seeded with the Golden Ratio constant ($\phi^{-1} = \text{0x9E3779B97F4A7C15}$):
 
 $$\text{Seed} = \text{SHA256}(\text{BlockHeaderPrefix})$$
 
-$$\text{State}_i = \text{Argon2id}(\text{Seed} \oplus \text{Nonce}_i, \text{salt}, \text{mem}=64\text{MB})$$
+$$\text{State}_{r+1} = \text{MatrixPermute64}(\text{State}_r, \phi^{-1}, r) \quad \forall r \in [0, 7]$$
 
-$$\text{FinalHash} = \text{SHA256}(\text{State}_i)$$
+$$\text{FinalHash} = \text{SHA256}(\text{Pack64}(\text{State}_8))$$
 
-* **ASIC Resistance:** Memory bandwidth latency prevents cheap fixed-function ASIC domination.
-* **Bare-Metal CUDA Acceleration:** Kernels are compiled in-memory via NVIDIA NVRTC, bypassing third-party dependencies and achieving over 5+ Gigahashes per second on modern Blackwell/Ada silicon.
+* **Wide-Pipeline GPU Saturation:** Interleaved 64-bit integer multiplications, bitwise rotations, and double-SHA256 finalization saturate modern consumer GPU ALUs.
+* **Bare-Metal CUDA Acceleration:** Kernels are compiled in-memory via NVIDIA NVRTC (`miner/cuda_solver.py`), achieving multi-gigahash throughput on modern Ada/Blackwell silicon while yielding in under 1ms on user input.
 
 ### 3.2 Elliptic Curve Cryptography
 * **Curve:** `secp256k1` (standard Koblitz curve, $y^2 = x^3 + 7 \pmod p$)
@@ -60,12 +60,12 @@ Doomsday enforces an immutable, hard-capped supply schedule modeled after thermo
 * **Base Unit:** 1 DOOM = $100,000,000$ Sparks ($10^8$ satoshi-equivalent)
 * **Target Block Time:** **20 seconds**
 * **Initial Block Subsidy:** **50.0 DOOM** per block
-* **Halving Schedule:** Every **2,100,000 blocks** (~1.33 years)
+* **Halving Schedule:** Every **210,000 blocks** (~48.6 days at 20s target)
 * **Halving Progression:**
-  * Blocks 0 – 2,099,999: 50.0 DOOM / block
-  * Blocks 2,100,000 – 4,199,999: 25.0 DOOM / block
-  * Blocks 4,200,000 – 6,299,999: 12.5 DOOM / block
-  * Blocks 6,300,000 – 8,399,999: 6.25 DOOM / block
+  * Blocks 0 – 209,999: 50.0 DOOM / block
+  * Blocks 210,000 – 419,999: 25.0 DOOM / block
+  * Blocks 420,000 – 629,999: 12.5 DOOM / block
+  * Blocks 630,000 – 839,999: 6.25 DOOM / block
   * Decay continues across 64 halvings until full circulation is achieved.
 
 ---

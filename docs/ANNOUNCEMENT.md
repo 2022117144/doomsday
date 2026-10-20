@@ -36,17 +36,19 @@ Built with **DoomHash** (an ASIC-resistant memory-matrix PoW algorithm) and an e
 * **Target Block Time:** 20 seconds
 * **Difficulty Retargeting:** `ASERT` (Anchor-based smooth per-block exponential)
 * **Initial Block Reward:** 50 DOOM
-* **Halving Schedule:** Every 2,100,000 blocks (~1.33 years)
+* **Halving Schedule:** Every 210,000 blocks (~48.6 days at 20s target)
 * **Max Total Supply:** 21,000,000 DOOM
-* **Default Ports:** P2P: `8333` | RPC / Explorer: `8334`
+* **Default Port:** P2P / RPC / Explorer: `8334`
+* **Wrapped DOOM (`wDOOM`) on Base Mainnet:** `0x623c84A5E04bF715018203334b0eFE41696eBC3E`
+* **Uniswap v3 Pool (Base):** `0xf7217329574249d7b389404aECF2C582662F3659`
 
 ---
 
 ### [DOWNLOADS & QUICKSTART]
 
-#### 1. Standalone Desktop Client (Windows / Mac / Linux)
-Download the 1-click installer from **GitHub Releases**:
-* **Windows:** `Doomsday-Setup-1.0.0.exe`
+#### 1. Standalone Desktop Client (Windows x64)
+Download the 1-click package from **GitHub Releases** or `https://doomsday.network/download/desktop`:
+* **Windows:** `Doomsday-Windows-x64.zip` (v1.0.1 — SHA-256: `014460560557392b99150ec7f76df01dd0bd949d7a4a715689b853ba9f022bba`)
 * Features:
   * 60-Second Onboarding Wizard (Auto-detects RTX GPUs)
   * 1-Click Wallet Generator

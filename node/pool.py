@@ -2,8 +2,11 @@ import time
 import math
 import struct
 import hashlib
+import json
+import os
 from typing import Dict, Any, List, Optional, Tuple
 from core.crypto import bits_to_target, target_to_bits, doom_hash
+from core.consensus import get_block_reward
 from core.transaction import COIN
 
 # Share difficulty: Easy enough for entry-level GPUs to submit shares regularly
@@ -24,11 +27,18 @@ class PoolWorker:
 
 
 class MiningPool:
-    def __init__(self, chain, pool_address: str = "doom1pool0000000000000000000000000000000000000", fee_pct: float = 0.0):
+    def __init__(
+        self,
+        chain,
+        pool_address: str = "doom1pool0000000000000000000000000000000000000",
+        fee_pct: float = 0.0,
+        state_path: str = "data/pool_state.json"
+    ):
         self.chain = chain
         self.pool_address = pool_address
         self.fee_pct = fee_pct
         self.share_target = POOL_SHARE_TARGET
+        self.state_path = state_path
 
         # Worker management: worker_key (address:name) -> PoolWorker
         self.workers: Dict[str, PoolWorker] = {}
@@ -42,6 +52,42 @@ class MiningPool:
 
         # History of blocks solved by pool
         self.blocks_found: List[Dict[str, Any]] = []
+        self._load_state()
+
+    def _load_state(self):
+        """Load persistent pool balances, round shares, and block history from disk."""
+        if not self.state_path or not os.path.exists(self.state_path):
+            return
+        try:
+            with open(self.state_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.round_shares = {k: int(v) for k, v in data.get("round_shares", {}).items()}
+            self.unpaid_sparks = {k: int(v) for k, v in data.get("unpaid_sparks", {}).items()}
+            self.total_paid_sparks = {k: int(v) for k, v in data.get("total_paid_sparks", {}).items()}
+            self.blocks_found = list(data.get("blocks_found", []))
+        except Exception as e:
+            print(f"[Pool] Warning: Could not load pool state ({e})")
+
+    def _save_state(self):
+        """Atomically persist pool state to disk so balances survive node restarts."""
+        if not self.state_path:
+            return
+        try:
+            parent = os.path.dirname(self.state_path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            tmp_path = self.state_path + ".tmp"
+            payload = {
+                "round_shares": self.round_shares,
+                "unpaid_sparks": self.unpaid_sparks,
+                "total_paid_sparks": self.total_paid_sparks,
+                "blocks_found": self.blocks_found[-200:]
+            }
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+            os.replace(tmp_path, self.state_path)
+        except Exception as e:
+            print(f"[Pool] Warning: Failed to save pool state ({e})")
 
     def get_job(self, worker_address: str, worker_name: str = "Worker-Default") -> Dict[str, Any]:
         """Generate a pool mining job template with pool share target."""
@@ -137,6 +183,7 @@ class MiningPool:
                 block_hash = hash_hex
                 self._distribute_block_rewards(height, block_hash, worker_address)
 
+        self._save_state()
         return {
             "accepted": True,
             "share_valid": True,
@@ -146,8 +193,8 @@ class MiningPool:
         }
 
     def _distribute_block_rewards(self, height: int, block_hash: str, solver_address: str):
-        """Distribute 50 DOOM reward proportionally across all round contributors."""
-        total_reward_sparks = int(50.0 * COIN)
+        """Distribute block reward proportionally across all round contributors."""
+        total_reward_sparks = get_block_reward(height)
         net_reward = int(total_reward_sparks * (1.0 - (self.fee_pct / 100.0)))
         total_round_shares = sum(self.round_shares.values())
 

@@ -59,9 +59,10 @@ The moment you move your mouse or press a key, the CUDA kernel halts in **under 
 * **0% Pre-mine:** Genesis block contained 0 developer allocation.
 * **0% ICO / Private Sale:** No VCs, no presales, no insider tokens.
 * **0% Developer Tax:** 100% of every block reward goes straight to the miner who found it.
-* **Hard Cap:** 21,000,000 DOOM total supply with 4-year halvings (Bitcoin economic model).
-* **ASERT Difficulty:** Retargets continuously on every block to resist hashrate spikes.
-* **Algorithm:** Memory-hard Argon2id + SHA-256 (ASIC-resistant).
+* **Hard Cap:** 21,000,000 DOOM total supply with 210,000-block halvings.
+* **ASERT Difficulty:** Retargets continuously on every 20-second block to resist hashrate spikes.
+* **Algorithm:** 64-Bit Register Matrix + Golden Ratio + SHA-256 (NVRTC CUDA C).
+* **Base Mainnet DeFi:** Verified 1:1 Wrapped DOOM (`wDOOM`: `0x623c84A5E04bF715018203334b0eFE41696eBC3E`) trading live on Uniswap v3 (`0xf7217329574249d7b389404aECF2C582662F3659`).
 
 ### Try it with Zero Downloads
 If you just want to test transactions, the live block explorer has a client-side Web Wallet and Community Faucet:
@@ -94,9 +95,9 @@ Would love to hear your feedback on the CUDA engine and idle response times!
 > Every single token in existence is minted by real miners securing the chain.
 
 **Tweet 3 (Tech):**
-> Powered by DoomHash: memory-hard Argon2id + SHA-256 for true ASIC resistance, paired with continuous ASERT difficulty adjustment on every block.
+> Powered by DoomHash: 64-bit register matrix permutations + Golden Ratio mixing + SHA-256, paired with continuous ASERT difficulty adjustment on every 20-second block.
 >
-> Built with pure CUDA C kernels and non-custodial browser cryptography.
+> Built with pure CUDA C kernels, non-custodial browser cryptography, and a live 1:1 Base Mainnet bridge (`wDOOM`).
 
 **Tweet 4 (Links):**
 > Mine today or test the network directly in your browser:

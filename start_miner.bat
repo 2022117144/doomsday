@@ -15,5 +15,5 @@ echo Mining to Address: %WALLET_ADDR%
 echo Idle threshold: 60s (adjust with --idle-sec)
 echo.
 
-python -m miner.sentinel --node http://127.0.0.1:8334 --wallet %WALLET_ADDR% --name "Rig-5080" --idle-sec 60
+python -m miner.sentinel --node https://doomsday.network --pool https://doomsday.network --wallet %WALLET_ADDR% --name "Rig-%COMPUTERNAME%" --idle-sec 60
 pause

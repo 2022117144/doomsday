@@ -607,12 +607,22 @@
     async function refreshBalance() {
       if (!currentWallet.address) return;
       try {
-        const res = await fetch(`/wallet/${currentWallet.address}/utxos`);
-        if (res.ok) {
+        const [res, poolRes] = await Promise.all([
+          fetch(`/wallet/${currentWallet.address}/utxos`).catch(() => null),
+          fetch(`/pool/worker/${currentWallet.address}`).catch(() => null)
+        ]);
+        if (res && res.ok) {
           const data = await res.json();
           currentBalance = data.balance_doom;
           document.getElementById('display-balance-doom').innerText = data.balance_doom.toFixed(8);
-          document.getElementById('display-balance-sparks').innerText = `${data.balance_sparks.toLocaleString()} Sparks • ${data.utxo_count} UTXOs`;
+          let subText = `${data.balance_sparks.toLocaleString()} Sparks • ${data.utxo_count} UTXOs`;
+          if (poolRes && poolRes.ok) {
+            const pData = await poolRes.json();
+            if (pData.unpaid_doom && pData.unpaid_doom > 0) {
+              subText += ` • Pool Pending: +${pData.unpaid_doom.toFixed(4)} DOOM`;
+            }
+          }
+          document.getElementById('display-balance-sparks').innerText = subText;
         }
       } catch (e) {
         console.error("Balance fetch error:", e);

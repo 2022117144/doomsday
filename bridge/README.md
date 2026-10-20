@@ -15,8 +15,10 @@ The smart contract is located at [`contracts/WrappedDOOM.sol`](contracts/Wrapped
 
 * **Standard:** ERC-20 / ERC-20Burnable
 * **Decimals:** 18 (`1.0 DOOM` = `10^18 wDOOM`)
-* **Total Supply:** Elastic, minted strictly 1:1 against native coins deposited in the vault.
+* **Base Mainnet Contract (Verified):** [`0x623c84A5E04bF715018203334b0eFE41696eBC3E`](https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code)
+* **Uniswap v3 Liquidity Pool (`wDOOM/WETH` 1%):** [`0xf7217329574249d7b389404aECF2C582662F3659`](https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659)
 * **Vault Address (Native Doomsday):** `doom1vault000000000000000000000000000000`
+* **Live Proof-of-Reserve Audit Endpoint:** [`https://doomsday.network/bridge/audit`](https://doomsday.network/bridge/audit)
 
 ---
 

@@ -1206,8 +1206,10 @@
         });
         const data = await res.json();
         if (res.ok) {
-          const bonusNote = data.referrer_bonus_doom > 0
-            ? ` (+${data.referrer_bonus_doom} DOOM sent to referrer ${data.referrer_address.slice(0, 12)}...)`
+          const bonusAmt = data.referral_bonus_doom || data.referrer_bonus_doom || 0;
+          const refAddr = data.referrer || data.referrer_address || '';
+          const bonusNote = bonusAmt > 0 && refAddr
+            ? ` (+${bonusAmt} DOOM sent to referrer ${refAddr.slice(0, 12)}...)`
             : '';
           statusDiv.innerHTML = `<span style="color: var(--green);">✓ Success! Dispensed ${data.amount_doom} DOOM to ${rcpt.slice(0, 12)}...${bonusNote} TxID: ${data.txid.slice(0, 14)}...</span>`;
           fetchFaucetInfo();

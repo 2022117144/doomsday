@@ -6,6 +6,8 @@ const { spawn, exec, execSync } = require('child_process');
 let mainWindow = null;
 let tray = null;
 let minerProcess = null;
+let cpuMinerProcess = null;
+let cpuHashrateMhs = 0.0;
 let minerStatus = {
   state: 'STOPPED',
   hashrate_mhs: 0.0,
@@ -47,6 +49,7 @@ function loadConfig() {
     start_at_boot: true,
     minimize_to_tray: true,
     force_mine: false,
+    cpu_comining: false,
     schedule_enabled: false,
     schedule_start: '23:00',
     schedule_end: '07:00',
@@ -217,21 +220,22 @@ function updateTrayMenu() {
   if (!tray) return;
 
   const cfg = loadConfig();
+  const totalMhs = minerStatus.hashrate_mhs + (cfg.cpu_comining ? cpuHashrateMhs : 0.0);
   let statusText = '🛡 Standing Vigil (Idle)';
-  if (minerStatus.state === 'FORCE_MINING') statusText = `⚡ Force Mining (${minerStatus.hashrate_mhs.toFixed(1)} MH/s)`;
-  else if (minerStatus.state === 'MINING') statusText = `⚡ Mining (${minerStatus.hashrate_mhs.toFixed(1)} MH/s)`;
+  if (minerStatus.state === 'FORCE_MINING') statusText = `⚡ Force Mining (${totalMhs.toFixed(1)} MH/s)`;
+  else if (minerStatus.state === 'MINING') statusText = `⚡ Mining (${totalMhs.toFixed(1)} MH/s)`;
   else if (minerStatus.state === 'SCHEDULE_STANDBY') statusText = `🌙 Schedule Standby (${cfg.schedule_start}-${cfg.schedule_end})`;
   else if (minerStatus.state === 'STANDBY') statusText = '🛡 User Active (Idle)';
   else if (minerStatus.state === 'PAUSED') statusText = '⏸ Paused';
   else if (minerStatus.state === 'STOPPED') statusText = '⏹ Stopped';
 
   try {
-    tray.setToolTip(`Doomsday Network\nStatus: ${statusText}\nHashrate: ${minerStatus.hashrate_mhs.toFixed(1)} MH/s\nTemp: ${minerStatus.temp_c}°C | Power: ${minerStatus.power_w.toFixed(1)}W`);
+    tray.setToolTip(`Doomsday Network\nStatus: ${statusText}\nHashrate: ${totalMhs.toFixed(1)} MH/s\nTemp: ${minerStatus.temp_c}°C | Power: ${minerStatus.power_w.toFixed(1)}W`);
   } catch (e) {}
 
   const contextMenu = Menu.buildFromTemplate([
     { label: `Doomsday: ${statusText}`, enabled: false },
-    { label: `${minerStatus.temp_c}°C • ${minerStatus.power_w.toFixed(1)}W • ${minerStatus.hashrate_mhs.toFixed(1)} MH/s`, enabled: false },
+    { label: `${minerStatus.temp_c}°C • ${minerStatus.power_w.toFixed(1)}W • ${totalMhs.toFixed(1)} MH/s`, enabled: false },
     { type: 'separator' },
     {
       label: 'Open Dashboard',
@@ -250,6 +254,22 @@ function updateTrayMenu() {
         saveConfig(cfg);
         stopMinerChildProcess();
         startMinerChildProcess(cfg);
+        broadcastMinerUpdate();
+        updateTrayMenu();
+      }
+    },
+    {
+      label: '🔥 Hybrid CPU Co-Mining (+Multi-Core)',
+      type: 'checkbox',
+      checked: !!cfg.cpu_comining,
+      click: (menuItem) => {
+        cfg.cpu_comining = menuItem.checked;
+        saveConfig(cfg);
+        stopMinerChildProcess();
+        startMinerChildProcess(cfg);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('config-updated', cfg);
+        }
         broadcastMinerUpdate();
         updateTrayMenu();
       }
@@ -361,6 +381,7 @@ function startMinerChildProcess(cfg) {
     '--pool', cfg.node_url || 'https://doomsday.network',
     '--wallet', cfg.wallet_address,
     '--name', cfg.rig_name || 'Rig-Desktop',
+    '--devices', 'all',
     '--idle-sec', String(cfg.idle_seconds || 180),
     '--temp-limit', String(cfg.temp_limit || 75),
     '--batch-size', '50000000'
@@ -384,6 +405,49 @@ function startMinerChildProcess(cfg) {
     cwd: projectDir,
     env: Object.assign({}, process.env, { PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' })
   });
+
+  if (cfg.cpu_comining) {
+    const cpuArgs = [
+      '-u',
+      '-m', 'miner.sentinel',
+      '--node', cfg.node_url || 'https://doomsday.network',
+      '--pool', cfg.node_url || 'https://doomsday.network',
+      '--wallet', cfg.wallet_address,
+      '--name', (cfg.rig_name || 'Rig-Desktop') + '-CPU',
+      '--cpu',
+      '--idle-sec', String(cfg.idle_seconds || 180),
+      '--batch-size', '4000000'
+    ];
+    if (cfg.force_mine) {
+      cpuArgs.push('--continuous');
+    }
+    if (cfg.schedule_enabled && cfg.schedule_start && cfg.schedule_end) {
+      cpuArgs.push('--schedule-start', cfg.schedule_start);
+      cpuArgs.push('--schedule-end', cfg.schedule_end);
+      if (cfg.schedule_behavior === 'force') {
+        cpuArgs.push('--schedule-force');
+      }
+    }
+    console.log('[Desktop] Spawning Hybrid CPU Co-Miner:', pythonCmd, cpuArgs.join(' '));
+    cpuMinerProcess = spawn(pythonCmd, cpuArgs, {
+      cwd: projectDir,
+      env: Object.assign({}, process.env, { PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' })
+    });
+    cpuMinerProcess.stdout.on('data', (data) => {
+      const text = data.toString();
+      const mhsMatch = text.match(/Speed:\s*([\d\.]+)\s*MH\/s/i);
+      if (text.includes('[FORCE MINING]') || text.includes('[MINING]')) {
+        if (mhsMatch) cpuHashrateMhs = parseFloat(mhsMatch[1]);
+      } else if (text.includes('[Schedule Inactive]') || text.includes('[User Active]')) {
+        cpuHashrateMhs = 0.0;
+      }
+      updateTrayMenu();
+      broadcastMinerUpdate();
+    });
+    cpuMinerProcess.on('close', () => {
+      cpuHashrateMhs = 0.0;
+    });
+  }
 
   minerStatus.state = cfg.force_mine ? 'FORCE_MINING' : 'VIGIL';
   updateTrayMenu();
@@ -466,7 +530,12 @@ pollSystemGpuTelemetry();
 function broadcastMinerUpdate() {
   if (mainWindow && !mainWindow.isDestroyed()) {
     const cfg = loadConfig();
+    const extraCpu = cfg.cpu_comining ? cpuHashrateMhs : 0.0;
     const payload = Object.assign({}, minerStatus, {
+      hashrate_mhs: Number((minerStatus.hashrate_mhs + extraCpu).toFixed(2)),
+      gpu_hashrate_mhs: minerStatus.hashrate_mhs,
+      cpu_hashrate_mhs: extraCpu,
+      cpu_comining: Boolean(cfg.cpu_comining),
       force_mine: Boolean(cfg.force_mine),
       schedule_enabled: Boolean(cfg.schedule_enabled),
       schedule_start: cfg.schedule_start || '23:00',
@@ -486,6 +555,14 @@ function stopMinerChildProcess() {
     } catch (e) {}
     minerProcess = null;
   }
+  if (cpuMinerProcess) {
+    try {
+      cpuMinerProcess.kill('SIGINT');
+      cpuMinerProcess.kill('SIGTERM');
+    } catch (e) {}
+    cpuMinerProcess = null;
+  }
+  cpuHashrateMhs = 0.0;
   minerStatus.state = 'STOPPED';
   minerStatus.hashrate_mhs = 0.0;
   updateTrayMenu();

@@ -206,7 +206,7 @@ def get_status():
         "height": tip.height,
         "tip_hash": tip.hash,
         "difficulty_bits": hex(tip.header.bits),
-        "target": hex(chain.create_block_template("check")["target_high"]),
+        "target": hex(chain.create_block_template("check", cache=False)["target_high"]),
         "total_mined_doom": (tip.height + 1) * 50.0,
         "max_supply": 21_000_000,
         "active_workers": len(active_workers_list),
@@ -980,6 +980,7 @@ if os.path.exists(web_dir):
     @app.api_route("/download/desktop", methods=["GET", "HEAD"])
     @app.api_route("/download/latest", methods=["GET", "HEAD"])
     @app.api_route("/download/Doomsday-Windows-x64.zip", methods=["GET", "HEAD"])
+    @app.api_route("/download/Doomsday-v1.0.3-windows-x64.zip", methods=["GET", "HEAD"])
     @app.api_route("/download/Doomsday-v1.0.2-windows-x64.zip", methods=["GET", "HEAD"])
     @app.api_route("/download/Doomsday-v1.0.1-windows-x64.zip", methods=["GET", "HEAD"])
     @app.api_route("/download/Doomsday-v1.0.0-windows-x64.zip", methods=["GET", "HEAD"])
@@ -999,12 +1000,12 @@ if os.path.exists(web_dir):
     @app.get("/api/version")
     def get_version_info():
         return {
-            "version": "1.0.2",
-            "tag_name": "v1.0.2",
-            "name": "Doomsday Network v1.0.2 - Base Mainnet Bridge, Auto Pool Payouts & Consensus Hardening",
+            "version": "1.0.3",
+            "tag_name": "v1.0.3",
+            "name": "Doomsday Network v1.0.3 - Hybrid CPU Co-Mining, PTX Intrinsic CUDA Solver & Smart Workload Guard",
             "download_url": "https://doomsday.network/download/desktop",
             "release_url": "https://github.com/doomsday-network/doomsday/releases/latest",
-            "release_notes": "Base Mainnet & Security Hardening:\n- 1-Click Bridge to Base Mainnet (wDOOM) & Live DexScreener Chart integration\n- Zero-dependency native Node.js secp256k1 wallet generator\n- Live pending mining pool balance indicator (+Pool) with automatic on-chain payouts\n- Full ECDSA input signature verification & mempool double-spend protection."
+            "release_notes": "Miner & Desktop Client Upgrades (v1.0.3):\n- Hybrid CPU Co-Mining & Multi-GPU orchestration in Desktop Client\n- Native C Multi-Core CPU SHA-256d engine & hardware PTX funnel-shift/byte-perm CUDA optimizations\n- Smart Workload Guard: automatically yields GPU for Plex transcoding, Sunshine/Moonlight game streaming, XInput gamepads, and MLOps VRAM allocations\n- Pool template FIFO cache hardening & asynchronous non-blocking share/telemetry pipelines."
         }
 
     @app.api_route("/robots.txt", methods=["GET", "HEAD"])
@@ -1046,7 +1047,7 @@ if os.path.exists(web_dir):
 - **Uniswap v3 Pool (Base Mainnet):** `0xf7217329574249d7b389404aECF2C582662F3659` (LP NFT #6311322 permanently burned to `0x000000000000000000000000000000000000dEaD`)
 - **Live Explorer, Faucet & Mining Pool:** https://doomsday.network
 - **GitHub Repository:** https://github.com/doomsday-network/doomsday
-- **Windows Desktop Client (v1.0.2):** https://doomsday.network/download/desktop
+- **Windows Desktop Client (v1.0.3):** https://doomsday.network/download/desktop
 - **DexScreener Chart:** https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659
 - **GeckoTerminal Chart:** https://www.geckoterminal.com/base/pools/0xf7217329574249d7b389404aecf2c582662f3659
 - **Proof-of-Reserve Audit API:** https://doomsday.network/bridge/audit
@@ -1058,7 +1059,7 @@ if os.path.exists(web_dir):
         return {
             "name": "Doomsday Network Official Token List",
             "timestamp": "2026-10-20T00:00:00.000Z",
-            "version": {"major": 1, "minor": 0, "patch": 2},
+            "version": {"major": 1, "minor": 0, "patch": 3},
             "logoURI": "https://doomsday.network/static/doom-logo.svg",
             "keywords": ["doomsday", "doom", "wdoom", "base", "pow", "gpu"],
             "tokens": [

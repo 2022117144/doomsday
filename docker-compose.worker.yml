@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  doomsday-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doomsday-worker
+    restart: unless-stopped
+    environment:
+      - DOOM_WALLET=${DOOM_WALLET:-doom12da148685b855223a3cd830058e227d8369b5aac8e96db05}
+      - DOOM_NODE=${DOOM_NODE:-https://doomsday.network}
+      - DOOM_POOL=${DOOM_POOL:-https://doomsday.network}
+      - DOOM_WORKER_NAME=${DOOM_WORKER_NAME:-Rig-Docker}

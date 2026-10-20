@@ -140,7 +140,7 @@ class MiningPool:
         if timestamp is not None and (self.pool_address, height, timestamp) in self.chain.active_templates:
             template = self.chain.active_templates[(self.pool_address, height, timestamp)]
         if template is None:
-            template = self.chain.create_block_template(self.pool_address)
+            template = self.chain.create_block_template(self.pool_address, timestamp=timestamp)
 
         prefix = bytes.fromhex(template["header_prefix_hex"])
         digest_bytes = doom_hash(prefix, nonce)

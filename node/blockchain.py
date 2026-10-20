@@ -98,11 +98,19 @@ class Blockchain:
         now_ts = current_timestamp if current_timestamp is not None else int(time.time())
         return calculate_next_bits(self.get_tip(), self.get_anchor_block(), current_timestamp=now_ts)
 
-    def create_block_template(self, miner_address: str) -> Dict[str, Any]:
+    def create_block_template(
+        self,
+        miner_address: str,
+        timestamp: Optional[int] = None,
+        cache: bool = True
+    ) -> Dict[str, Any]:
         """Generate a complete mining job template for worker rigs."""
         tip = self.get_tip()
         height = tip.height + 1
-        now_ts = max(tip.header.timestamp + 1, int(time.time()))
+        if timestamp is not None and timestamp > tip.header.timestamp:
+            now_ts = int(timestamp)
+        else:
+            now_ts = max(tip.header.timestamp + 1, int(time.time()))
         bits = self.get_next_bits(current_timestamp=now_ts)
         target = bits_to_target(bits)
         reward = get_block_reward(height)
@@ -169,9 +177,15 @@ class Blockchain:
             "miner_address": miner_address,
             "transactions": [tx.to_dict() for tx in all_txs]
         }
-        self.active_templates[(miner_address, height, now_ts)] = template
-        if len(self.active_templates) > 100:
-            self.active_templates.clear()
+        if cache:
+            self.active_templates[(miner_address, height, now_ts)] = template
+            if len(self.active_templates) > 500:
+                stale_keys = [k for k in self.active_templates if k[1] < height]
+                for k in stale_keys:
+                    self.active_templates.pop(k, None)
+                while len(self.active_templates) > 500:
+                    oldest_key = next(iter(self.active_templates))
+                    self.active_templates.pop(oldest_key, None)
         return template
 
     def add_block_candidate(
@@ -193,7 +207,7 @@ class Blockchain:
             template = self.active_templates[(miner_address, height, timestamp)]
         
         if template is None:
-            template = self.create_block_template(miner_address)
+            template = self.create_block_template(miner_address, timestamp=timestamp)
         block_time = timestamp if timestamp is not None else template["timestamp"]
 
         header = BlockHeader(

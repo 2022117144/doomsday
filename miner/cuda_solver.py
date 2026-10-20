@@ -16,29 +16,46 @@ typedef unsigned long long uint64_t;
 extern "C" {
 
 __device__ __forceinline__ uint32_t rotr32(uint32_t x, int n) {
-    return (x >> n) | (x << (32 - n));
+    return __funnelshift_r(x, x, n);
 }
 
 __device__ __forceinline__ uint64_t rotl64(uint64_t x, int n) {
     return (x << n) | (x >> (64 - n));
 }
 
+__device__ __forceinline__ uint32_t bswap32(uint32_t x) {
+    return __byte_perm(x, 0, 0x0123);
+}
+
 __constant__ uint32_t K[64] = {
-    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    0x428a2f98U, 0x71374491U, 0xb5c0fbcfU, 0xe9b5dba5U, 0x3956c25bU, 0x59f111f1U, 0x923f82a4U, 0xab1c5ed5U,
+    0xd807aa98U, 0x12835b01U, 0x243185beU, 0x550c7dc3U, 0x72be5d74U, 0x80deb1feU, 0x9bdc06a7U, 0xc19bf174U,
+    0xe49b69c1U, 0xefbe4786U, 0x0fc19dc6U, 0x240ca1ccU, 0x2de92c6fU, 0x4a7484aaU, 0x5cb0a9dcU, 0x76f988daU,
+    0x983e5152U, 0xa831c66dU, 0xb00327c8U, 0xbf597fc7U, 0xc6e00bf3U, 0xd5a79147U, 0x06ca6351U, 0x14292967U,
+    0x27b70a85U, 0x2e1b2138U, 0x4d2c6dfcU, 0x53380d13U, 0x650a7354U, 0x766a0abbU, 0x81c2c92eU, 0x92722c85U,
+    0xa2bfe8a1U, 0xa81a664bU, 0xc24b8b70U, 0xc76c51a3U, 0xd192e819U, 0xd6990624U, 0xf40e3585U, 0x106aa070U,
+    0x19a4c116U, 0x1e376c08U, 0x2748774cU, 0x34b0bcb5U, 0x391c0cb3U, 0x4ed8aa4aU, 0x5b9cca4fU, 0x682e6ff3U,
+    0x748f82eeU, 0x78a5636fU, 0x84c87814U, 0x8cc70208U, 0x90befffaU, 0xa4506cebU, 0xbef9a3f7U, 0xc67178f2U
 };
 
-__device__ void sha256_transform(uint32_t state[8], const uint32_t data[16]) {
+// Precomputed K[i] + W[i] for the constant 64-byte SHA-256 padding block (W[0]=0x80000000, W[15]=512)
+__constant__ uint32_t WK2[64] = {
+    0xc28a2f98U, 0x71374491U, 0xb5c0fbcfU, 0xe9b5dba5U, 0x3956c25bU, 0x59f111f1U, 0x923f82a4U, 0xab1c5ed5U,
+    0xd807aa98U, 0x12835b01U, 0x243185beU, 0x550c7dc3U, 0x72be5d74U, 0x80deb1feU, 0x9bdc06a7U, 0xc19bf374U,
+    0x649b69c1U, 0xf0fe4786U, 0x0fe1edc6U, 0x240cf254U, 0x4fe9346fU, 0x6cc984beU, 0x61b9411eU, 0x16f988faU,
+    0xf2c65152U, 0xa88e5a6dU, 0xb019fc65U, 0xb9d99ec7U, 0x9a1231c3U, 0xe70eeaa0U, 0xfdb1232bU, 0xc7353eb0U,
+    0x3069bad5U, 0xcb976d5fU, 0x5a0f118fU, 0xdc1eeefdU, 0x0a35b689U, 0xde0b7a04U, 0x58f4ca9dU, 0xe15d5b16U,
+    0x007f3e86U, 0x37088980U, 0xa507ea32U, 0x6fab9537U, 0x17406110U, 0x0d8cd6f1U, 0xcdaa3b6dU, 0xc0bbbe37U,
+    0x83613bdaU, 0xdb48a363U, 0x0b02e931U, 0x6fd15ca7U, 0x521afacaU, 0x31338431U, 0x6ed41a95U, 0x6d437890U,
+    0xc39c91f2U, 0x9eccabbdU, 0xb5c9a0e6U, 0x532fb63cU, 0xd2c741c6U, 0x07237ea3U, 0xa4954b68U, 0x4c191d76U
+};
+
+__device__ __forceinline__ uint64_t sha256_64bytes_high64(const uint64_t w[8]) {
     uint32_t W[64];
     #pragma unroll
-    for (int i = 0; i < 16; i++) {
-        W[i] = data[i];
+    for (int i = 0; i < 8; i++) {
+        W[i * 2]     = bswap32((uint32_t)w[i]);
+        W[i * 2 + 1] = bswap32((uint32_t)(w[i] >> 32));
     }
     #pragma unroll
     for (int i = 16; i < 64; i++) {
@@ -47,8 +64,11 @@ __device__ void sha256_transform(uint32_t state[8], const uint32_t data[16]) {
         W[i] = W[i-16] + s0 + W[i-7] + s1;
     }
 
-    uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
-    uint32_t e = state[4], f = state[5], g = state[6], h = state[7];
+    uint32_t s0_init = 0x6a09e667U, s1_init = 0xbb67ae85U, s2_init = 0x3c6ef372U, s3_init = 0xa54ff53aU;
+    uint32_t s4_init = 0x510e527fU, s5_init = 0x9b05688cU, s6_init = 0x1f83d9abU, s7_init = 0x5be0cd19U;
+
+    uint32_t a = s0_init, b = s1_init, c = s2_init, d = s3_init;
+    uint32_t e = s4_init, f = s5_init, g = s6_init, h = s7_init;
 
     #pragma unroll
     for (int i = 0; i < 64; i++) {
@@ -58,48 +78,29 @@ __device__ void sha256_transform(uint32_t state[8], const uint32_t data[16]) {
         uint32_t S0 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
         uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
         uint32_t temp2 = S0 + maj;
-
-        h = g;
-        g = f;
-        f = e;
-        e = d + temp1;
-        d = c;
-        c = b;
-        b = a;
-        a = temp1 + temp2;
+        h = g; g = f; f = e; e = d + temp1;
+        d = c; c = b; b = a; a = temp1 + temp2;
     }
 
-    state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-    state[4] += e; state[5] += f; state[6] += g; state[7] += h;
-}
+    uint32_t st0 = s0_init + a, st1 = s1_init + b, st2 = s2_init + c, st3 = s3_init + d;
+    uint32_t st4 = s4_init + e, st5 = s5_init + f, st6 = s6_init + g, st7 = s7_init + h;
 
-__device__ void sha256_64bytes(const uint8_t* in, uint8_t* out) {
-    uint32_t state[8] = {
-        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-    };
-    uint32_t chunk1[16];
+    a = st0; b = st1; c = st2; d = st3;
+    e = st4; f = st5; g = st6; h = st7;
+
     #pragma unroll
-    for (int i = 0; i < 16; i++) {
-        int idx = i * 4;
-        chunk1[i] = ((uint32_t)in[idx] << 24) | ((uint32_t)in[idx+1] << 16) | ((uint32_t)in[idx+2] << 8) | ((uint32_t)in[idx+3]);
+    for (int i = 0; i < 64; i++) {
+        uint32_t S1 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);
+        uint32_t ch = (e & f) ^ ((~e) & g);
+        uint32_t temp1 = h + S1 + ch + WK2[i];
+        uint32_t S0 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
+        uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+        uint32_t temp2 = S0 + maj;
+        h = g; g = f; f = e; e = d + temp1;
+        d = c; c = b; b = a; a = temp1 + temp2;
     }
-    sha256_transform(state, chunk1);
 
-    uint32_t chunk2[16];
-    #pragma unroll
-    for (int i = 0; i < 16; i++) chunk2[i] = 0;
-    chunk2[0] = 0x80000000;
-    chunk2[15] = 512;
-    sha256_transform(state, chunk2);
-
-    #pragma unroll
-    for (int i = 0; i < 8; i++) {
-        out[i*4]   = (uint8_t)(state[i] >> 24);
-        out[i*4+1] = (uint8_t)(state[i] >> 16);
-        out[i*4+2] = (uint8_t)(state[i] >> 8);
-        out[i*4+3] = (uint8_t)(state[i]);
-    }
+    return ((uint64_t)(st0 + a) << 32) | (uint64_t)(st1 + b);
 }
 
 __global__ void doom_mine_kernel(
@@ -107,8 +108,8 @@ __global__ void doom_mine_kernel(
     uint64_t start_nonce,
     uint32_t total_nonces,
     uint64_t target_high,
-    uint64_t* d_best_hash,
-    uint64_t* d_winning_nonce
+    uint64_t* __restrict__ d_best_hash,
+    uint64_t* __restrict__ d_winning_nonce
 ) {
     uint64_t tid = (uint64_t)blockDim.x * blockIdx.x + threadIdx.x;
     if (tid >= total_nonces) return;
@@ -137,19 +138,18 @@ __global__ void doom_mine_kernel(
         }
     }
 
-    uint8_t hash_out[32];
-    sha256_64bytes((const uint8_t*)w, hash_out);
+    uint64_t hash_high = sha256_64bytes_high64(w);
 
-    uint64_t hash_high = 0;
-    #pragma unroll
-    for (int k = 0; k < 8; k++) {
-        hash_high = (hash_high << 8) | hash_out[k];
-    }
-
-    if (hash_high < *d_best_hash) {
+    if (hash_high < target_high && hash_high < *(volatile uint64_t*)d_best_hash) {
         unsigned long long prev = atomicMin((unsigned long long*)d_best_hash, (unsigned long long)hash_high);
         if (hash_high < prev) {
-            atomicExch((unsigned long long*)d_winning_nonce, (unsigned long long)nonce);
+            if (*(volatile uint64_t*)d_best_hash == hash_high) {
+                atomicExch((unsigned long long*)d_winning_nonce, (unsigned long long)nonce);
+            }
+            __threadfence();
+            if (*(volatile uint64_t*)d_best_hash == hash_high) {
+                atomicExch((unsigned long long*)d_winning_nonce, (unsigned long long)nonce);
+            }
         }
     }
 }

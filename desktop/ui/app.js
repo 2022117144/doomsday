@@ -70,6 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (config.minimize_to_tray !== undefined) {
       document.getElementById('check-tray').checked = !!config.minimize_to_tray;
     }
+    const cpuCheck = document.getElementById('check-cpu-comining');
+    if (cpuCheck) {
+      cpuCheck.checked = !!config.cpu_comining;
+    }
 
     if (btnCancel) {
       btnCancel.onclick = () => {
@@ -111,6 +115,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const idleSec = idleMode === 'aggressive' ? 60 : 180;
       const startAtBoot = document.getElementById('check-startup').checked;
       const minToTray = document.getElementById('check-tray').checked;
+      const cpuCominingEl = document.getElementById('check-cpu-comining');
+      const cpuComining = cpuCominingEl ? cpuCominingEl.checked : false;
       const rigName = document.getElementById('oobe-rig-name').value.trim();
       const nodeUrl = document.getElementById('oobe-node-url').value.trim();
 
@@ -120,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       config.idle_seconds = idleSec;
       config.start_at_boot = startAtBoot;
       config.minimize_to_tray = minToTray;
+      config.cpu_comining = cpuComining;
       if (rigName) config.rig_name = rigName;
       if (nodeUrl) config.node_url = nodeUrl;
 
@@ -455,17 +462,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (status.state === 'FORCE_MINING' || (status.state === 'MINING' && status.force_mine)) {
       orb.classList.add('mining');
       orbIcon.innerText = '⚡';
-      stateText.innerText = 'FORCE MINING';
+      stateText.innerText = status.cpu_comining ? 'HYBRID FORCE MINING' : 'FORCE MINING';
       stateText.style.color = '#10b981';
-      subText.innerText = '100% SILICON LOAD';
+      subText.innerText = status.cpu_comining ? 'GPU + MULTI-CORE CPU' : '100% SILICON LOAD';
       subText.style.color = '#10b981';
       speedVal.innerText = `${status.hashrate_mhs.toLocaleString()} MH/s`;
     } else if (status.state === 'MINING') {
       orb.classList.add('mining');
       orbIcon.innerText = '⚡';
-      stateText.innerText = 'MINING BLOCKS';
+      stateText.innerText = status.cpu_comining ? 'HYBRID MINING' : 'MINING BLOCKS';
       stateText.style.color = 'var(--primary)';
-      subText.innerText = 'SILICON AWAKE';
+      subText.innerText = status.cpu_comining ? 'GPU + MULTI-CORE CPU' : 'SILICON AWAKE';
       subText.style.color = 'var(--primary)';
       speedVal.innerText = `${status.hashrate_mhs.toLocaleString()} MH/s`;
     } else if (status.state === 'SCHEDULE_STANDBY') {
@@ -671,8 +678,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     config = Object.assign(config, newCfg);
     const startCheck = document.getElementById('check-startup');
     const trayCheck = document.getElementById('check-tray');
+    const cpuCheck = document.getElementById('check-cpu-comining');
     if (startCheck) startCheck.checked = !!config.start_at_boot;
     if (trayCheck) trayCheck.checked = !!config.minimize_to_tray;
+    if (cpuCheck) cpuCheck.checked = !!config.cpu_comining;
   });
 
   window.doomsdayAPI.onTriggerOpenSchedule(() => {

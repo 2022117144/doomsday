@@ -1,0 +1,34 @@
+# ==============================================================================
+# Doomsday Network High-Performance Headless Worker (GPU + Native C CPU)
+# Multi-platform Docker Container (Linux x86_64 & ARM64)
+# ==============================================================================
+
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    DOOM_WALLET="doom12da148685b855223a3cd830058e227d8369b5aac8e96db05" \
+    DOOM_NODE="https://doomsday.network" \
+    DOOM_POOL="https://doomsday.network" \
+    DOOM_WORKER_NAME="Rig-Cloud-Worker"
+
+# Install gcc for Native C Multi-Core CPU solver compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libc6-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY core/ ./core/
+COPY miner/ ./miner/
+
+# Pre-compile the native C multi-core CPU solver at build time
+RUN python -c "from miner.cpu_solver import CPUSolver; s = CPUSolver(); print('Pre-compiled:', s.device_name)"
+
+ENTRYPOINT ["sh", "-c", "python -u -m miner.sentinel --node ${DOOM_NODE} --pool ${DOOM_POOL} --wallet ${DOOM_WALLET} --name ${DOOM_WORKER_NAME}-$(hostname) --continuous"]

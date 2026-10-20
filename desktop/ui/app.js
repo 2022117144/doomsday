@@ -146,6 +146,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const url = config.node_url || 'http://localhost:8334';
       window.doomsdayAPI.openExternal(url);
     };
+    const btnOpenDex = document.getElementById('btn-open-dex');
+    if (btnOpenDex) {
+      btnOpenDex.onclick = () => {
+        window.doomsdayAPI.openExternal('https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659');
+      };
+    }
     document.getElementById('btn-reconfigure').onclick = (e) => {
       e.preventDefault();
       showOOBE(true);

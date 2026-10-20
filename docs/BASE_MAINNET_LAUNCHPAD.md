@@ -4,17 +4,18 @@ Welcome to the **Doomsday Network Base Mainnet Launchpad**. This guide details h
 
 ---
 
-## 📌 Quick Summary
+## 📌 Quick Summary (LIVE ON MAINNET)
 
 | Component | Target Parameter | Status |
 | :--- | :--- | :--- |
-| **Network** | Base Mainnet (Chain ID `8453`) | Verified |
-| **Token Name / Symbol** | Wrapped DOOM (`wDOOM`) | Compiled (5,602 bytes) |
+| **Network** | Base Mainnet (Chain ID `8453`) | **LIVE** |
+| **Token Name / Symbol** | Wrapped DOOM (`wDOOM`) | `0x623c84A5E04bF715018203334b0eFE41696eBC3E` |
 | **Decimals** | 18 | Standard ERC-20 |
 | **Backing Ratio** | 1:1 Proof-of-Reserve Vault | `doom1vault000000000000000000000000000000` |
-| **DEX Router** | Uniswap v3 (`wDOOM / WETH`) | Verified on-chain |
-| **Pool Fee Tier** | 1.00% (`10000`, Tick Spacing: 200) | Full-Range Perpetual |
-| **Estimated Gas Cost** | ~0.000025 ETH (~$0.06 USD) | Ultra-low L2 Blob Gas |
+| **Uniswap v3 Pool** | `wDOOM / WETH` (1.00% fee tier) | `0xf7217329574249d7b389404aECF2C582662F3659` |
+| **Pool Liquidity** | Full-Range Perpetual `[-887200, 887200]` | **MINTED ON-CHAIN** |
+| **DexScreener** | Live Candlestick & Trade Chart | [View on DexScreener](https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659) |
+| **Uniswap Trading** | Direct Swap Interface | [Trade wDOOM on Uniswap](https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E) |
 
 ---
 

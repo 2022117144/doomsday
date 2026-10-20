@@ -257,7 +257,14 @@ async function main() {
       deadline: Math.floor(Date.now() / 1000) + 1200
     };
 
-    const mintPositionTx = await positionManager.mint(mintParams, { gasLimit: 500000 });
+    let gasLimit = 800000;
+    try {
+      const estimated = await positionManager.mint.estimateGas(mintParams);
+      gasLimit = (estimated * 130n) / 100n;
+    } catch (e) {
+      console.log('Using default safe gas limit 800000 for mint');
+    }
+    const mintPositionTx = await positionManager.mint(mintParams, { gasLimit });
     const receipt = await mintPositionTx.wait();
     console.log(`✓ Liquidity Position Minted! (Tx: ${receipt.hash})`);
   } else {

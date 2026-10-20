@@ -66,10 +66,6 @@ jobs:
         run: |
           npm ci || npm install
 
-      - name: Compile Native C Multi-Core CPU Solver (Windows x64)
-        run: |
-          python -c "from miner.cpu_solver import CPUSolver; s = CPUSolver(); print('Compiled:', s.device_name)"
-
       - name: Package Desktop Binary
         working-directory: ./desktop
         run: |

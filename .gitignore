@@ -13,6 +13,7 @@ data/
 backups/
 *wallet*.json
 *.dll
+!miner/cpu_doomhash_*.dll
 .env
 *.key
 *.db

@@ -161,6 +161,7 @@ class P2PTxGossipRequest(BaseModel):
 
 
 faucet_claims: Dict[str, float] = {}
+faucet_ip_claims: Dict[str, float] = {}
 
 
 def load_faucet_wallet() -> Optional[Dict[str, str]]:
@@ -679,12 +680,22 @@ def get_bridge_audit():
 
 
 @app.post("/faucet/claim")
-async def claim_faucet(req: FaucetClaimRequest):
+async def claim_faucet(req: FaucetClaimRequest, request: Request):
     faucet = load_faucet_wallet()
     if not faucet:
         raise HTTPException(status_code=503, detail="Faucet wallet is currently not loaded on this node.")
 
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+
     now = time.time()
+    last_ip_claim = faucet_ip_claims.get(client_ip, 0)
+    if client_ip not in ("127.0.0.1", "localhost") and (now - last_ip_claim < 300):
+        wait_ip = int(300 - (now - last_ip_claim))
+        raise HTTPException(status_code=429, detail=f"IP rate limit active (anti-bot guard). Please wait {wait_ip}s before claiming again.")
+
     last_claim = faucet_claims.get(req.recipient_address, 0)
     if now - last_claim < 60:
         wait_sec = int(60 - (now - last_claim))
@@ -736,6 +747,7 @@ async def claim_faucet(req: FaucetClaimRequest):
         raise HTTPException(status_code=400, detail=reason)
 
     faucet_claims[req.recipient_address] = now
+    faucet_ip_claims[client_ip] = now
     await broadcast_event("new_tx", tx.to_dict())
     asyncio.create_task(p2p.broadcast_tx(tx))
     return {
@@ -1031,7 +1043,7 @@ if os.path.exists(web_dir):
             "name": "Doomsday Network v1.0.3 - Hybrid CPU Co-Mining, PTX Intrinsic CUDA Solver & Smart Workload Guard",
             "download_url": "https://doomsday.network/download/desktop",
             "release_url": "https://github.com/doomsday-network/doomsday/releases/latest",
-            "release_notes": "Miner & Desktop Client Upgrades (v1.0.3):\n- Hybrid CPU Co-Mining & Multi-GPU orchestration in Desktop Client\n- Native C Multi-Core CPU SHA-256d engine & hardware PTX funnel-shift/byte-perm CUDA optimizations\n- Smart Workload Guard: automatically yields GPU for Plex transcoding, Sunshine/Moonlight game streaming, XInput gamepads, and MLOps VRAM allocations\n- Pool template FIFO cache hardening & asynchronous non-blocking share/telemetry pipelines."
+            "release_notes": "Miner & Desktop Client Upgrades (v1.0.3):\n- Hybrid CPU Co-Mining & Multi-GPU orchestration in Desktop Client\n- Native C Multi-Core CPU DoomHash engine & hardware PTX funnel-shift/byte-perm CUDA optimizations\n- Smart Workload Guard: automatically yields GPU for Plex transcoding, Sunshine/Moonlight game streaming, XInput gamepads, and MLOps VRAM allocations\n- Pool template FIFO cache hardening & asynchronous non-blocking share/telemetry pipelines."
         }
 
     @app.api_route("/robots.txt", methods=["GET", "HEAD"])
@@ -1064,7 +1076,7 @@ if os.path.exists(web_dir):
     def get_llms_txt():
         content = """# Doomsday Network (DOOM / wDOOM)
 
-> Open-source Layer-1 Proof-of-Idle-Work GPU blockchain (SHA-256d CUDA) with zero-fee PPLNS mining pool and 1:1 Base Mainnet DeFi bridge (wDOOM).
+> Open-source Layer-1 Proof-of-Idle-Work GPU blockchain (DoomHash CUDA: SHA-256 + 8-round 64-bit golden-ratio permutation) with zero-fee PPLNS mining pool and 1:1 Base Mainnet DeFi bridge (wDOOM).
 
 ## Key Facts
 - **Native L1 Ticker:** DOOM (Max Supply: 21,000,000 DOOM; Block Reward: 50 DOOM; Halving: 210,000 blocks; Target Block Time: 20s ASERT)

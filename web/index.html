@@ -408,6 +408,41 @@
       background: rgba(255, 59, 48, 0.15);
       border-color: var(--primary);
     }
+    .workspace-nav {
+      display: flex;
+      gap: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 8px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .workspace-tab {
+      flex: 1;
+      min-width: 190px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .workspace-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .workspace-tab.active {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 51, 68, 0.22) 0%, rgba(255, 153, 0, 0.12) 100%);
+      border-color: var(--primary);
+      box-shadow: 0 0 18px rgba(255, 51, 68, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -421,28 +456,63 @@
           <div class="tagline">Proof-of-Idle-Work • Layer-1 Sovereign Silicon</div>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-        <a href="https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659" target="_blank" style="color: #00ff88; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 6px; border: 1px solid rgba(0,255,136,0.3); background: rgba(0,255,136,0.06); transition: all 0.2s;">
-          📈 Chart
-        </a>
-        <a href="https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E" target="_blank" style="color: #ff007a; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 6px; border: 1px solid rgba(255,0,122,0.3); background: rgba(255,0,122,0.06); transition: all 0.2s;">
-          🦄 Uniswap
-        </a>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div class="clock-widget" title="Live Consensus Schedule: 50 DOOM block subsidy halves every 210,000 blocks">
+          <div class="clock-dot"></div>
+          <span id="header-halving-pill" style="font-size: 12px;">20s Block Target • <strong>50 DOOM / Block</strong></span>
+        </div>
         <a href="/wallet" style="color: #fff; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--card-border)'">
-          👛 Web Wallet
+          👛 Web Wallet &amp; Bridge
         </a>
         <a href="/docs" style="color: #fff; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--card-border)'">
-          📜 Whitepaper & Docs
+          📜 Whitepaper
+        </a>
+        <a href="https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E" target="_blank" style="color: #ff007a; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 6px; border: 1px solid rgba(255,0,122,0.3); background: rgba(255,0,122,0.06); transition: all 0.2s;">
+          🦄 Trade wDOOM
         </a>
         <a href="/download/desktop" class="btn-download" target="_blank">
-          <span>⚡ Download Desktop Miner</span>
+          <span>⚡ Download Miner</span>
         </a>
-        <div class="clock-widget">
-          <div class="clock-dot"></div>
-          <span>DOOMSDAY CLOCK: <strong>90s TO MIDNIGHT</strong></span>
-        </div>
       </div>
     </header>
+
+    <!-- DOWNLOAD & MINING HERO BANNER -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <div class="hero-badge">PROOF-OF-IDLE-WORK • V1.0.3 DESKTOP RELEASE</div>
+        <h2 class="hero-title">Stand Vigil. Mine DOOM Silently While You're Away.</h2>
+        <p class="hero-desc">
+          Doomsday Sentinel harvests DOOM on your GPU when your PC is idle and yields 100% of resources within microseconds the moment you move your mouse, launch a game, or stream video.
+        </p>
+        <div class="hero-actions">
+          <a href="/download/desktop" class="btn-hero-primary" target="_blank">
+            <span>⬇️ Download Windows Miner (v1.0.3)</span>
+          </a>
+          <button type="button" onclick="switchMainWorkspace('faucet'); switchWalletTab('faucet');" class="btn-hero-secondary" style="border-color: rgba(16, 185, 129, 0.5); color: var(--green); background: rgba(16, 185, 129, 0.12); cursor: pointer;">
+            <span>🚰 Claim 10–15 Free DOOM</span>
+          </button>
+          <button type="button" onclick="switchMainWorkspace('defi'); openDexChart();" class="btn-hero-secondary" style="border-color: rgba(0, 255, 136, 0.4); color: #00ff88; cursor: pointer;">
+            <span>📈 Live wDOOM Market &amp; Chart</span>
+          </button>
+          <a href="https://github.com/doomsday-network/doomsday" class="btn-hero-secondary" target="_blank">
+            <span>🐙 GitHub</span>
+          </a>
+          <div class="hero-meta">
+            <span>✓ Windows 10/11 x64</span>
+            <span>✓ NVIDIA CUDA + Native C CPU</span>
+            <span>✓ 0% Pool Fee</span>
+          </div>
+        </div>
+        <details style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
+          <summary style="cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; user-select: none;">
+            🐧 Using Linux or HiveOS? Click for 1-Line Terminal Setup
+          </summary>
+          <div style="margin-top: 10px; background: rgba(0,0,0,0.55); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #fff; user-select: all; word-break: break-all;">
+            git clone https://github.com/doomsday-network/doomsday.git &amp;&amp; cd doomsday &amp;&amp; bash web/install.sh --wallet YOUR_DOOM_ADDRESS
+          </div>
+        </details>
+      </div>
+    </div>
 
     <!-- METRICS -->
     <div class="metrics-grid">
@@ -464,421 +534,407 @@
       <div class="metric-card">
         <div class="metric-title">Target Difficulty</div>
         <div class="metric-value" id="val-diff">0x1e0ffff0</div>
-        <div class="metric-sub">ASERT Auto-Retarget (20s)</div>
+        <div class="metric-sub" id="val-market-sub">ASERT Auto-Retarget (20s)</div>
       </div>
     </div>
 
-    <!-- DOWNLOAD & MINING HERO BANNER -->
-    <div class="hero-banner">
-      <div class="hero-content">
-        <div class="hero-badge">PROOF-OF-IDLE-WORK • V1.0.3 DESKTOP RELEASE</div>
-        <h2 class="hero-title">Stand Vigil. Mine DOOM Silently While You're Away.</h2>
-        <p class="hero-desc">
-          Doomsday Sentinel stands guard on your GPU with microsecond zero-lag input interception. 
-          When your PC is idle, your NVIDIA GPU harvests DOOM at full speed. The instant you move your mouse or press a key, 
-          it yields 100% of GPU resources with zero FPS drop while gaming or working.
-        </p>
-        <div class="hero-actions">
-          <a href="/download/desktop" class="btn-hero-primary" target="_blank">
-            <span>⬇️ Download Windows Desktop App (v1.0.3)</span>
-          </a>
-          <a href="#wallet-faucet-hub" onclick="switchWalletTab('faucet');" class="btn-hero-secondary" style="border-color: rgba(255, 153, 0, 0.5); color: var(--accent); background: rgba(255, 153, 0, 0.1);">
-            <span>🚰 Free DOOM Faucet &amp; Share</span>
-          </a>
-          <a href="https://dexscreener.com/base/0xf7217329574249d7b389404aECF2C582662F3659" class="btn-hero-secondary" style="border-color: rgba(0, 255, 136, 0.4); color: #00ff88;" target="_blank">
-            <span>📈 DexScreener Chart</span>
-          </a>
-          <a href="https://www.geckoterminal.com/base/pools/0xf7217329574249d7b389404aecf2c582662f3659" class="btn-hero-secondary" style="border-color: rgba(139, 195, 74, 0.4); color: #a3e635;" target="_blank">
-            <span>🦎 GeckoTerminal</span>
-          </a>
-          <a href="https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E" class="btn-hero-secondary" style="border-color: rgba(255, 0, 122, 0.4); color: #ff007a;" target="_blank">
-            <span>🦄 Swap on Uniswap</span>
-          </a>
-          <a href="https://github.com/doomsday-network/doomsday" class="btn-hero-secondary" target="_blank">
-            <span>🐙 GitHub Repository</span>
-          </a>
-          <div class="hero-meta">
-            <span>✓ Windows 10/11 x64</span>
-            <span>✓ NVIDIA RTX / GTX (CUDA)</span>
-            <span>✓ Zero Setup Required</span>
-          </div>
-        </div>
-        <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <span style="font-size: 12px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace;">🐧 LINUX / HIVEOS RIG SETUP:</span>
-          <div style="background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #fff; user-select: all;">
-            git clone https://github.com/doomsday-network/doomsday.git &amp;&amp; cd doomsday &amp;&amp; bash web/install.sh --wallet YOUR_DOOM_ADDRESS
-          </div>
-        </div>
-      </div>
+    <!-- TOP-LEVEL WORKSPACE TABS (ELIMINATES PAGE CLUTTER) -->
+    <div class="workspace-nav" id="main-workspace-nav">
+      <button id="wspace-btn-explorer" class="workspace-tab active" onclick="switchMainWorkspace('explorer')">
+        📦 Live Block Explorer
+      </button>
+      <button id="wspace-btn-faucet" class="workspace-tab" onclick="switchMainWorkspace('faucet')">
+        🚰 Free Faucet, Wallet &amp; Share
+      </button>
+      <button id="wspace-btn-mining" class="workspace-tab" onclick="switchMainWorkspace('mining')">
+        ⚡ GPU Mining Pool &amp; Calculator
+      </button>
+      <button id="wspace-btn-defi" class="workspace-tab" onclick="switchMainWorkspace('defi')">
+        📊 wDOOM Market &amp; P2P Nodes
+      </button>
     </div>
 
-    <!-- LIVE BASE L2 MARKET & EMBEDDED DEX CHART -->
-    <div class="wallet-box" style="margin-bottom: 36px; flex-direction: column; align-items: stretch; gap: 16px; border-color: rgba(0, 255, 136, 0.25);">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <span style="font-weight: 800; font-size: 15px; color: #fff;">📊 wDOOM / WETH Live Market (Base Mainnet)</span>
-          <span id="dex-price-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--green); background: rgba(16, 185, 129, 0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">Loading Price...</span>
-          <span id="dex-change-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"></span>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button onclick="toggleDexChart()" id="btn-toggle-chart" style="background: rgba(0, 255, 136, 0.12); border: 1px solid rgba(0, 255, 136, 0.4); color: #00ff88; padding: 6px 14px; font-size: 12px;">📈 Show Live Embedded Chart</button>
-          <a href="https://basescan.org/tx/0x0443cdb07aa02c45109858fa626a4d93c30c684ff882abd2ce5fe4c675fd67ed" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.08);">🔒 100% LP Burned (0x...dEaD)</a>
-          <a href="https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.3);">✓ BaseScan Verified</a>
-        </div>
+    <!-- ================================================================== -->
+    <!-- WORKSPACE 1: LIVE BLOCK EXPLORER                                   -->
+    <!-- ================================================================== -->
+    <div id="wspace-pane-explorer">
+      <div class="section-header">
+        <div class="section-title">📦 Recent Mined Blocks</div>
+        <div style="font-size: 12px; color: var(--text-muted);" id="blocks-count">Click any block to inspect on-chain transactions</div>
       </div>
-      <div id="dex-chart-container" style="display: none; width: 100%; height: 460px; border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border);">
-        <iframe id="dex-chart-iframe" src="" style="width: 100%; height: 100%; border: 0;" allowfullscreen></iframe>
-      </div>
-    </div>
-
-    <!-- INTERACTIVE GPU IDLE EARNINGS CALCULATOR -->
-    <div class="wallet-box" style="margin-bottom: 36px; flex-direction: column; align-items: stretch; gap: 16px; border-color: rgba(255, 153, 0, 0.28);">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <div>
-          <div style="font-weight: 800; font-size: 15px; color: #fff;">⚡ GPU Idle Mining Reward Estimator</div>
-          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Estimate how much DOOM your gaming GPU mines while you sleep or step away from your desk</div>
-        </div>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); background: rgba(255, 153, 0, 0.1); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255, 153, 0, 0.3);">50 DOOM / Block • 20s Target</span>
-      </div>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: end;">
-        <div>
-          <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 6px;">Select Your NVIDIA GPU</label>
-          <select id="calc-gpu-select" onchange="updateEarningsCalculator()" style="width: 100%; background: #09090b; color: #fff; border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
-            <option value="9500">NVIDIA RTX 5090 (~9,500 MH/s)</option>
-            <option value="6900" selected>NVIDIA RTX 5080 (~6,900 MH/s)</option>
-            <option value="8200">NVIDIA RTX 4090 (~8,200 MH/s)</option>
-            <option value="5800">NVIDIA RTX 4080 Super (~5,800 MH/s)</option>
-            <option value="4200">NVIDIA RTX 4070 Ti / Super (~4,200 MH/s)</option>
-            <option value="2630">NVIDIA RTX 4060 Ti / 4060 (~2,630 MH/s)</option>
-            <option value="3900">NVIDIA RTX 3080 / 3090 (~3,900 MH/s)</option>
-            <option value="2100">NVIDIA RTX 3060 / 3070 (~2,100 MH/s)</option>
-          </select>
-        </div>
-        <div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Idle Hours Per Day</label>
-            <span id="calc-hours-label" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent);">12 hrs / day</span>
-          </div>
-          <input type="range" id="calc-hours-slider" min="1" max="24" value="12" oninput="updateEarningsCalculator()" style="width: 100%; accent-color: var(--primary); cursor: pointer;" />
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Your Share of Network</div>
-          <div id="calc-share-val" style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Daily DOOM</div>
-          <div id="calc-daily-doom" style="font-size: 18px; font-weight: 800; color: var(--green); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Daily Value (USD)</div>
-          <div id="calc-daily-usd" style="font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Monthly DOOM</div>
-          <div id="calc-monthly-doom" style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RECENT BLOCKS -->
-    <div class="section-header">
-      <div class="section-title">📦 Recent Mined Blocks</div>
-      <div style="font-size: 12px; color: var(--text-muted);" id="blocks-count">Click any block to inspect on-chain transactions</div>
-    </div>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Height</th>
-            <th>Block Hash</th>
-            <th>Transactions</th>
-            <th>Mined By</th>
-            <th>Nonce</th>
-            <th>Reward</th>
-            <th>Time</th>
-          </tr>
-        </thead>
-        <tbody id="blocks-table-body">
-          <!-- Injected dynamically -->
-        </tbody>
-      </table>
-    </div>
-
-    <!-- DOOMSDAY MINING POOL PROTOCOL -->
-    <div class="section-header" style="margin-top: 40px;">
-      <div class="section-title">🏊 Doomsday Mining Pool</div>
-      <div style="font-size: 12px; color: var(--text-muted);">Proportional Reward Sharing (PPLNS) • Zero Fee • Low-Variance GPU Payouts</div>
-    </div>
-
-    <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 20px;">
-      <!-- POOL STATS ROW -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Pool Hashrate</div>
-          <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;" id="pool-hashrate">0.00 MH/s</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Active Miners</div>
-          <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;" id="pool-active-miners">0 Workers</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Pool Blocks Found</div>
-          <div style="font-size: 20px; font-weight: 800; color: var(--green); margin-top: 4px;" id="pool-blocks-found">0</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Pool Fee</div>
-          <div style="font-size: 20px; font-weight: 800; color: var(--accent); margin-top: 4px;">0.0% (Zero Fee)</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Share Target</div>
-          <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 6px; font-family: 'JetBrains Mono', monospace;">0x1e0fffff</div>
-        </div>
-      </div>
-
-      <!-- WORKER LOOKUP & PAYOUT -->
-      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 18px; border-radius: 10px;">
-        <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #fff;">🔎 Worker Share & Balance Lookup</div>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <input type="text" id="pool-worker-input" placeholder="Enter your DOOM address (doom1...)" style="flex: 1; min-width: 280px;">
-          <button onclick="lookupPoolWorker()" style="background: var(--card-border); border: 1px solid rgba(255,255,255,0.2);">Check Worker</button>
-        </div>
-        <div id="pool-worker-result" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--card-border);">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
-            <div>
-              <span style="font-size: 11px; color: var(--text-muted);">Status:</span>
-              <div id="worker-status-badge" style="font-weight: 700; font-size: 14px;">-</div>
-            </div>
-            <div>
-              <span style="font-size: 11px; color: var(--text-muted);">Hashrate:</span>
-              <div id="worker-hashrate-val" style="font-weight: 700; font-size: 14px;">-</div>
-            </div>
-            <div>
-              <span style="font-size: 11px; color: var(--text-muted);">Round Shares:</span>
-              <div id="worker-shares-val" style="font-weight: 700; font-size: 14px;">-</div>
-            </div>
-            <div>
-              <span style="font-size: 11px; color: var(--text-muted);">Unpaid Balance:</span>
-              <div id="worker-unpaid-val" style="font-weight: 800; font-size: 15px; color: var(--green);">-</div>
-            </div>
-          </div>
-          <div style="margin-top: 14px; display: flex; align-items: center; gap: 12px;">
-            <button id="btn-pool-claim" onclick="claimPoolPayout()" style="background: linear-gradient(135deg, var(--green) 0%, #059669 100%); padding: 8px 18px; font-size: 13px;">💰 Request Payout to Wallet</button>
-            <span id="pool-payout-status" style="font-size: 12px; font-family: 'JetBrains Mono', monospace;"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- POOL CONNECTION GUIDE -->
-      <div style="background: rgba(0,0,0,0.4); border: 1px dashed var(--card-border); padding: 14px 18px; border-radius: 8px; font-size: 12px; color: var(--text-muted);">
-        <strong style="color: #fff;">Connect your miner to the pool:</strong>
-        <div style="margin-top: 8px; font-family: 'JetBrains Mono', monospace; color: var(--accent); user-select: all;">
-          python -m miner.sentinel --pool https://doomsday.network --wallet &lt;YOUR_ADDRESS&gt;
-        </div>
-      </div>
-    </div>
-
-    <!-- DECENTRALIZED P2P MESH & INDEPENDENT VALIDATING NODES -->
-    <div class="section-header" style="margin-top: 40px;">
-      <div class="section-title">🌐 P2P Wire Mesh & Validating Nodes</div>
-      <div style="font-size: 12px; color: var(--text-muted);">Decentralized Byzantine Fault Tolerant Mesh • Independent Verification • Zero Central Points of Failure</div>
-    </div>
-
-    <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 20px;">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Active P2P Peers</div>
-          <div style="font-size: 20px; font-weight: 800; color: var(--green); margin-top: 4px;" id="p2p-peers-count">0 Peers</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Wire Protocol</div>
-          <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">DOOM v1.0.0</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Consensus Validation</div>
-          <div style="font-size: 16px; font-weight: 800; color: var(--accent); margin-top: 6px;">Independent PoW + ASERT</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Local Persistence</div>
-          <div style="font-size: 16px; font-weight: 800; color: #fff; margin-top: 6px; font-family: 'JetBrains Mono', monospace;">blocks.db (Per Node)</div>
-        </div>
-      </div>
-
-      <!-- PEERS TABLE -->
-      <div class="table-container" style="margin-top: 0; background: rgba(0,0,0,0.2);">
+      <div class="table-container">
         <table>
           <thead>
             <tr>
-              <th>Node ID</th>
-              <th>Peer Address</th>
-              <th>Tip Height</th>
-              <th>Latency</th>
-              <th>Status</th>
+              <th>Height</th>
+              <th>Block Hash</th>
+              <th>Transactions</th>
+              <th>Mined By</th>
+              <th>Nonce</th>
+              <th>Reward</th>
+              <th>Time</th>
             </tr>
           </thead>
-          <tbody id="peers-table-body">
-            <tr>
-              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
-                <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">Seed Authority Standing Vigil (Port 8334)</div>
-                <div>Awaiting peer connections. Launch a full node below to expand the sovereign P2P mesh!</div>
-              </td>
-            </tr>
+          <tbody id="blocks-table-body">
+            <!-- Injected dynamically -->
           </tbody>
         </table>
       </div>
-
-      <!-- RUN A NODE CALLOUT -->
-      <div style="background: rgba(255, 51, 68, 0.04); border: 1px solid rgba(255, 51, 68, 0.2); padding: 16px 20px; border-radius: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
-          <div style="font-weight: 700; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 8px;">
-            <span>⚡ Run Your Own Independent Validating Full Node</span>
-          </div>
-          <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--accent); background: rgba(255, 153, 0, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 153, 0, 0.3);">
-            1-Command Launch
-          </span>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">
-          You don't have to trust any single server. Run a full node on your own PC to independently verify block hashes, execute ASERT difficulty retargets, and keep your own local copy of the blockchain ledger.
-        </p>
-        <div style="background: #09090c; border: 1px solid var(--card-border); padding: 10px 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); user-select: all; word-break: break-all;">
-          python -m node.server --host 0.0.0.0 --web-port 8334 --peer doomsday.network:8334
-        </div>
-      </div>
     </div>
 
-    <!-- SOVEREIGN WEB WALLET & FAUCET HUB -->
-    <div id="wallet-faucet-hub" class="section-header" style="margin-top: 40px;">
-      <div class="section-title">👛 Sovereign Web Wallet, Faucet &amp; Referrals</div>
-      <div style="font-size: 12px; color: var(--text-muted);">Client-Side Wallet Generation, Peer-to-Peer Transfers, Free Faucet &amp; +10 DOOM Referral Rewards</div>
-    </div>
-
-    <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 16px;">
-      <!-- TAB NAVIGATION -->
-      <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; flex-wrap: wrap;">
-        <button id="tab-btn-faucet" class="tab-btn active" onclick="switchWalletTab('faucet')">🚰 Free Faucet &amp; Share (+10–15 DOOM)</button>
-        <button id="tab-btn-inspect" class="tab-btn" onclick="switchWalletTab('inspect')">🔍 Check Balance</button>
-        <button id="tab-btn-send" class="tab-btn" onclick="switchWalletTab('send')">⚡ Send DOOM</button>
-        <button id="tab-btn-create" class="tab-btn" onclick="switchWalletTab('create')">🔑 Create Wallet</button>
-      </div>
-
-      <!-- TAB 1: INSPECT BALANCE -->
-      <div id="tab-inspect" class="tab-pane" style="display: none;">
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <div class="input-group">
-            <input type="text" id="wallet-input" placeholder="Enter any DOOM address (doom1...)" />
-          </div>
-          <button onclick="checkBalance()">Check Balance</button>
-        </div>
-        <div style="display: flex; gap: 8px; width: 100%; margin-top: 12px; flex-wrap: wrap; align-items: center;">
-          <span style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Quick Inspect Protocol Vaults:</span>
-          <button id="btn-inspect-my-wallet" style="display: none; background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.45); color: var(--green); font-size: 12px; padding: 6px 14px;" onclick="inspectMySavedWallet()">👛 My Browser Wallet</button>
-          <button style="background: #272730; font-size: 12px; padding: 6px 14px;" onclick="inspectWallet('doom1vault000000000000000000000000000000', '1:1 Base Bridge Reserve Vault')">🌉 1:1 Base Bridge Vault</button>
-          <button style="background: #272730; font-size: 12px; padding: 6px 14px;" onclick="inspectWallet('doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de', 'Community Faucet Reserve')">🚰 Community Faucet Reserve</button>
-          <button style="background: #272730; font-size: 12px; padding: 6px 14px;" onclick="inspectWallet('doom12c148fe7e3b07ca9d29af1c59106c6b0866eaec79eb14919', 'Zero-Fee Mining Pool Vault')">🏊 Mining Pool Vault</button>
-        </div>
-        <div id="balance-result" style="font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--green); margin-top: 14px;"></div>
-      </div>
-
-      <!-- TAB 2: SEND DOOM -->
-      <div id="tab-send" class="tab-pane" style="display: none;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-          <div>
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Sender DOOM Address</label>
-            <input type="text" id="send-sender-address" placeholder="doom1..." />
-          </div>
-          <div>
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Sender Private Key (Hex / WIF)</label>
-            <input type="password" id="send-private-key" placeholder="64-character private key hex" />
-          </div>
-          <div>
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Recipient DOOM Address</label>
-            <input type="text" id="send-recipient-address" placeholder="doom1..." />
-          </div>
-          <div>
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Amount (DOOM)</label>
-            <input type="number" step="0.1" min="0.1" id="send-amount" placeholder="e.g. 50.0" />
-          </div>
-        </div>
-        <div style="margin-top: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-          <button onclick="submitSendTx()" style="background: linear-gradient(135deg, var(--primary), var(--accent));">Broadcast Transaction ⚡</button>
-          <div id="send-status" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;"></div>
+    <!-- ================================================================== -->
+    <!-- WORKSPACE 2: FREE FAUCET, WALLET & VIRAL REFERRALS                 -->
+    <!-- ================================================================== -->
+    <div id="wspace-pane-faucet" style="display: none;">
+      <div id="wallet-faucet-hub" class="section-header">
+        <div class="section-title">👛 Sovereign Web Wallet, Faucet &amp; Referrals</div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          Need the 1:1 Base Mainnet Bridge? <a href="/wallet" style="color: var(--primary); font-weight: 700;">Open Full Web Wallet &amp; Bridge &rarr;</a>
         </div>
       </div>
 
-      <!-- TAB 3: CREATE WALLET -->
-      <div id="tab-create" class="tab-pane" style="display: none;">
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
-          Generate a new secp256k1 keypair and DOOM address 100% locally in your browser. It automatically syncs with the <a href="/wallet" style="color: var(--primary);">Web Wallet</a>, Faucet, and Referral Link.
-        </p>
-        <button onclick="generateNewWallet()" style="background: #272730; border: 1px solid var(--primary); color: #fff;">⚡ Generate New Wallet Keypair</button>
-        <div id="create-wallet-result" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1px solid var(--card-border);">
-          <div style="margin-bottom: 10px;">
-            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Public DOOM Address</div>
-            <div id="new-wallet-address" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--green); word-break: break-all; margin-top: 4px;"></div>
-          </div>
-          <div style="margin-bottom: 12px;">
-            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Private Key (Keep Secret!)</div>
-            <div id="new-wallet-key" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); word-break: break-all; margin-top: 4px;"></div>
-          </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button onclick="downloadWalletBackup()" style="font-size: 12px; padding: 8px 14px; background: #272730;">📥 Download Backup (.json)</button>
-            <button onclick="switchWalletTab('faucet')" style="font-size: 12px; padding: 8px 14px; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--green); color: var(--green);">🚰 Claim Free DOOM &amp; Share &rarr;</button>
-            <button onclick="useGeneratedWallet()" style="font-size: 12px; padding: 8px 14px; background: rgba(255, 153, 0, 0.2); border: 1px solid var(--accent); color: var(--accent);">Use in Send Tab &rarr;</button>
-          </div>
+      <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 16px;">
+        <!-- TAB NAVIGATION -->
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; flex-wrap: wrap;">
+          <button id="tab-btn-faucet" class="tab-btn active" onclick="switchWalletTab('faucet')">🚰 Free Faucet &amp; Share (+10–15 DOOM)</button>
+          <button id="tab-btn-inspect" class="tab-btn" onclick="switchWalletTab('inspect')">🔍 Check Balance</button>
+          <button id="tab-btn-send" class="tab-btn" onclick="switchWalletTab('send')">⚡ Send DOOM</button>
+          <button id="tab-btn-create" class="tab-btn" onclick="switchWalletTab('create')">🔑 Create Wallet</button>
         </div>
-      </div>
 
-      <!-- TAB 4: FAUCET & SOCIAL SHARE -->
-      <div id="tab-faucet" class="tab-pane">
-        <div id="referral-active-banner" style="display: none; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--green); font-family: 'JetBrains Mono', monospace;">
-          🎁 <strong>Referral Code Active!</strong> Claiming below awards you <strong>15.0 DOOM (+50% Bonus)</strong> and sends <strong>+10.0 DOOM</strong> to your referrer (<span id="referral-addr-label"></span>)!
+        <!-- TAB 1: INSPECT BALANCE -->
+        <div id="tab-inspect" class="tab-pane" style="display: none;">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="input-group">
+              <input type="text" id="wallet-input" placeholder="Enter any DOOM address (doom1...)" />
+            </div>
+            <button onclick="checkBalance()">Check Balance</button>
+          </div>
+          <div style="display: flex; gap: 8px; width: 100%; margin-top: 12px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Quick Inspect Protocol Vaults:</span>
+            <button id="btn-inspect-my-wallet" style="display: none; background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.45); color: var(--green); font-size: 12px; padding: 6px 14px;" onclick="inspectMySavedWallet()">👛 My Browser Wallet</button>
+            <button style="background: #272730; font-size: 12px; padding: 6px 14px;" onclick="inspectWallet('doom1vault000000000000000000000000000000', '1:1 Base Bridge Reserve Vault')">🌉 1:1 Base Bridge Vault</button>
+            <button style="background: #272730; font-size: 12px; padding: 6px 14px;" onclick="inspectWallet('doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de', 'Community Faucet Reserve')">🚰 Community Faucet Reserve</button>
+            <button style="background: #272730; font-size: 12px; padding: 6px 14px;" onclick="inspectWallet('doom12c148fe7e3b07ca9d29af1c59106c6b0866eaec79eb14919', 'Zero-Fee Mining Pool Vault')">🏊 Mining Pool Vault</button>
+          </div>
+          <div id="balance-result" style="font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--green); margin-top: 14px;"></div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
-            Claim <strong>10.0 DOOM</strong> (or <strong>15.0 DOOM</strong> via referral link) from the network faucet. (Limit: 1 claim / min)
+
+        <!-- TAB 2: SEND DOOM -->
+        <div id="tab-send" class="tab-pane" style="display: none;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            <div>
+              <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Sender DOOM Address</label>
+              <input type="text" id="send-sender-address" placeholder="doom1..." />
+            </div>
+            <div>
+              <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Sender Private Key (Hex / WIF)</label>
+              <input type="password" id="send-private-key" placeholder="64-character private key hex" />
+            </div>
+            <div>
+              <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Recipient DOOM Address</label>
+              <input type="text" id="send-recipient-address" placeholder="doom1..." />
+            </div>
+            <div>
+              <label style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block;">Amount (DOOM)</label>
+              <input type="number" step="0.1" min="0.1" id="send-amount" placeholder="e.g. 50.0" />
+            </div>
+          </div>
+          <div style="margin-top: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <button onclick="submitSendTx()" style="background: linear-gradient(135deg, var(--primary), var(--accent));">Broadcast Transaction ⚡</button>
+            <div id="send-status" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;"></div>
+          </div>
+        </div>
+
+        <!-- TAB 3: CREATE WALLET -->
+        <div id="tab-create" class="tab-pane" style="display: none;">
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+            Generate a new secp256k1 keypair and DOOM address 100% locally in your browser. It automatically syncs with the <a href="/wallet" style="color: var(--primary);">Web Wallet</a>, Faucet, and Referral Link.
           </p>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <button onclick="quickGenerateForFaucet()" style="font-size: 11px; padding: 5px 10px; background: rgba(255, 51, 68, 0.15); border: 1px solid rgba(255, 51, 68, 0.4); color: #fff; font-family: 'JetBrains Mono', monospace;">⚡ No Wallet? 1-Click Generate</button>
-            <div id="faucet-reserve-badge" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent); background: rgba(255,153,0,0.1); padding: 4px 10px; border-radius: 6px;">Reserve: Loading...</div>
-          </div>
-        </div>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <div class="input-group">
-            <input type="text" id="faucet-recipient-input" oninput="updateReferralShareBox(this.value)" placeholder="Enter your DOOM address (doom1...) or click 1-Click Generate above" />
-          </div>
-          <button id="btn-claim-faucet" onclick="claimFaucet()" style="background: linear-gradient(135deg, #10b981, #059669);">Claim 10 DOOM 🚰</button>
-        </div>
-        <div id="faucet-status" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-top: 14px;"></div>
-
-        <!-- VIRAL REFERRAL & SOCIAL SHARE CENTER -->
-        <div style="margin-top: 18px; padding: 16px; background: rgba(255, 153, 0, 0.06); border: 1px solid rgba(255, 153, 0, 0.25); border-radius: 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
-            <div style="font-weight: 700; font-size: 13px; color: var(--accent);">🚀 Share &amp; Earn +10 DOOM Per Claim (On-Chain Referral)</div>
-            <span id="referral-copy-feedback" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: 700;"></span>
-          </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
-            Every friend who claims from your link gets <strong>15.0 DOOM (+50% bonus)</strong> and the node automatically sends <strong>+10.0 DOOM</strong> straight to your wallet. Copy your link or ready-made social post below:
-          </p>
-
-          <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 4px;">1. Your Personal Referral Link:</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
-            <input type="text" id="referral-link-output" readonly onclick="this.select()" value="https://doomsday.network/" style="flex: 1; min-width: 240px; font-size: 12px; padding: 9px 12px; background: rgba(0,0,0,0.55); border: 1px solid var(--card-border); border-radius: 6px; color: var(--green); font-family: 'JetBrains Mono', monospace;" />
-            <button id="btn-copy-ref-link" onclick="copyReferralLink()" style="font-size: 12px; padding: 9px 16px; background: #272730; border: 1px solid rgba(255,255,255,0.15);">📋 Copy Referral Link</button>
-          </div>
-
-          <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 4px;">2. Ready-to-Paste Social Post (Discord / Telegram / SMS / X / Reddit):</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch;">
-            <textarea id="social-share-text-output" readonly rows="2" onclick="this.select()" style="flex: 1; min-width: 260px; font-size: 12px; padding: 9px 12px; background: rgba(0,0,0,0.55); border: 1px solid var(--card-border); border-radius: 6px; color: #fff; font-family: 'JetBrains Mono', monospace; resize: none; line-height: 1.4;">⚡ Mining $DOOM on my idle GPU with Doomsday Network — open-source Proof-of-Work L1 + 1:1 wDOOM on Base (Uniswap v3). Claim 15 FREE DOOM from the live faucet: https://doomsday.network/</textarea>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-              <button id="btn-copy-social-post" onclick="copySocialPostText()" style="font-size: 12px; padding: 9px 16px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: var(--green);">📣 Copy Post Text</button>
-              <button onclick="shareReferralOnX()" style="font-size: 12px; padding: 9px 14px; background: rgba(29, 155, 240, 0.2); border: 1px solid rgba(29, 155, 240, 0.5); color: #38bdf8;">🐦 Share on X</button>
-              <button onclick="shareReferralOnReddit()" style="font-size: 12px; padding: 9px 14px; background: rgba(255, 69, 0, 0.2); border: 1px solid rgba(255, 69, 0, 0.5); color: #fb923c;">🔥 Post on Reddit</button>
+          <button onclick="generateNewWallet()" style="background: #272730; border: 1px solid var(--primary); color: #fff;">⚡ Generate New Wallet Keypair</button>
+          <div id="create-wallet-result" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1px solid var(--card-border);">
+            <div style="margin-bottom: 10px;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Public DOOM Address</div>
+              <div id="new-wallet-address" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--green); word-break: break-all; margin-top: 4px;"></div>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Private Key (Keep Secret!)</div>
+              <div id="new-wallet-key" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); word-break: break-all; margin-top: 4px;"></div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button onclick="downloadWalletBackup()" style="font-size: 12px; padding: 8px 14px; background: #272730;">📥 Download Backup (.json)</button>
+              <button onclick="switchWalletTab('faucet')" style="font-size: 12px; padding: 8px 14px; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--green); color: var(--green);">🚰 Claim Free DOOM &amp; Share &rarr;</button>
+              <button onclick="useGeneratedWallet()" style="font-size: 12px; padding: 8px 14px; background: rgba(255, 153, 0, 0.2); border: 1px solid var(--accent); color: var(--accent);">Use in Send Tab &rarr;</button>
             </div>
           </div>
         </div>
+
+        <!-- TAB 4: FAUCET & SOCIAL SHARE -->
+        <div id="tab-faucet" class="tab-pane">
+          <div id="referral-active-banner" style="display: none; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--green); font-family: 'JetBrains Mono', monospace;">
+            🎁 <strong>Referral Code Active!</strong> Claiming below awards you <strong>15.0 DOOM (+50% Bonus)</strong> and sends <strong>+10.0 DOOM</strong> to your referrer (<span id="referral-addr-label"></span>)!
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
+              Claim <strong>10.0 DOOM</strong> (or <strong>15.0 DOOM</strong> via referral link) from the network faucet.
+            </p>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button onclick="quickGenerateForFaucet()" style="font-size: 11px; padding: 5px 10px; background: rgba(255, 51, 68, 0.15); border: 1px solid rgba(255, 51, 68, 0.4); color: #fff; font-family: 'JetBrains Mono', monospace;">⚡ No Wallet? 1-Click Generate</button>
+              <div id="faucet-reserve-badge" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent); background: rgba(255,153,0,0.1); padding: 4px 10px; border-radius: 6px;">Reserve: Loading...</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="input-group">
+              <input type="text" id="faucet-recipient-input" oninput="updateReferralShareBox(this.value)" placeholder="Enter your DOOM address (doom1...) or click 1-Click Generate above" />
+            </div>
+            <button id="btn-claim-faucet" onclick="claimFaucet()" style="background: linear-gradient(135deg, #10b981, #059669);">Claim 10 DOOM 🚰</button>
+          </div>
+          <div id="faucet-status" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-top: 14px;"></div>
+
+          <!-- VIRAL REFERRAL & SOCIAL SHARE CENTER -->
+          <div style="margin-top: 18px; padding: 16px; background: rgba(255, 153, 0, 0.06); border: 1px solid rgba(255, 153, 0, 0.25); border-radius: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+              <div style="font-weight: 700; font-size: 13px; color: var(--accent);">🚀 Share &amp; Earn +10 DOOM Per Claim (On-Chain Referral)</div>
+              <span id="referral-copy-feedback" style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: 700;"></span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+              Every friend who claims from your link gets <strong>15.0 DOOM (+50% bonus)</strong> and the node automatically sends <strong>+10.0 DOOM</strong> straight to your wallet. Copy your link or ready-made social post below:
+            </p>
+
+            <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 4px;">1. Your Personal Referral Link:</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
+              <input type="text" id="referral-link-output" readonly onclick="this.select()" value="https://doomsday.network/" style="flex: 1; min-width: 240px; font-size: 12px; padding: 9px 12px; background: rgba(0,0,0,0.55); border: 1px solid var(--card-border); border-radius: 6px; color: var(--green); font-family: 'JetBrains Mono', monospace;" />
+              <button id="btn-copy-ref-link" onclick="copyReferralLink()" style="font-size: 12px; padding: 9px 16px; background: #272730; border: 1px solid rgba(255,255,255,0.15);">📋 Copy Referral Link</button>
+            </div>
+
+            <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 4px;">2. Ready-to-Paste Social Post (Discord / Telegram / SMS / X / Reddit):</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch;">
+              <textarea id="social-share-text-output" readonly rows="2" onclick="this.select()" style="flex: 1; min-width: 260px; font-size: 12px; padding: 9px 12px; background: rgba(0,0,0,0.55); border: 1px solid var(--card-border); border-radius: 6px; color: #fff; font-family: 'JetBrains Mono', monospace; resize: none; line-height: 1.4;">⚡ Mining $DOOM on my idle GPU with Doomsday Network — open-source Proof-of-Work L1 + 1:1 wDOOM on Base (Uniswap v3). Claim 15 FREE DOOM from the live faucet: https://doomsday.network/</textarea>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button id="btn-copy-social-post" onclick="copySocialPostText()" style="font-size: 12px; padding: 9px 16px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: var(--green);">📣 Copy Post Text</button>
+                <button onclick="shareReferralOnX()" style="font-size: 12px; padding: 9px 14px; background: rgba(29, 155, 240, 0.2); border: 1px solid rgba(29, 155, 240, 0.5); color: #38bdf8;">🐦 Share on X</button>
+                <button onclick="shareReferralOnReddit()" style="font-size: 12px; padding: 9px 14px; background: rgba(255, 69, 0, 0.2); border: 1px solid rgba(255, 69, 0, 0.5); color: #fb923c;">🔥 Post on Reddit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- WORKSPACE 3: GPU MINING POOL & EARNINGS CALCULATOR                 -->
+    <!-- ================================================================== -->
+    <div id="wspace-pane-mining" style="display: none;">
+      <!-- INTERACTIVE GPU IDLE EARNINGS CALCULATOR -->
+      <div class="wallet-box" style="margin-bottom: 28px; flex-direction: column; align-items: stretch; gap: 16px; border-color: rgba(255, 153, 0, 0.28);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-weight: 800; font-size: 15px; color: #fff;">⚡ GPU Idle Mining Reward Estimator</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Estimate how much DOOM your gaming GPU mines while you sleep or step away from your desk</div>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); background: rgba(255, 153, 0, 0.1); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255, 153, 0, 0.3);">50 DOOM / Block • 20s Target</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: end;">
+          <div>
+            <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; display: block; margin-bottom: 6px;">Select Your NVIDIA GPU</label>
+            <select id="calc-gpu-select" onchange="updateEarningsCalculator()" style="width: 100%; background: #09090b; color: #fff; border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+              <option value="9500">NVIDIA RTX 5090 (~9,500 MH/s)</option>
+              <option value="6900" selected>NVIDIA RTX 5080 (~6,900 MH/s)</option>
+              <option value="8200">NVIDIA RTX 4090 (~8,200 MH/s)</option>
+              <option value="5800">NVIDIA RTX 4080 Super (~5,800 MH/s)</option>
+              <option value="4200">NVIDIA RTX 4070 Ti / Super (~4,200 MH/s)</option>
+              <option value="2630">NVIDIA RTX 4060 Ti / 4060 (~2,630 MH/s)</option>
+              <option value="3900">NVIDIA RTX 3080 / 3090 (~3,900 MH/s)</option>
+              <option value="2100">NVIDIA RTX 3060 / 3070 (~2,100 MH/s)</option>
+            </select>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <label style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Idle Hours Per Day</label>
+              <span id="calc-hours-label" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent);">12 hrs / day</span>
+            </div>
+            <input type="range" id="calc-hours-slider" min="1" max="24" value="12" oninput="updateEarningsCalculator()" style="width: 100%; accent-color: var(--primary); cursor: pointer;" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Your Share of Network</div>
+            <div id="calc-share-val" style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Daily DOOM</div>
+            <div id="calc-daily-doom" style="font-size: 18px; font-weight: 800; color: var(--green); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Daily Value (USD)</div>
+            <div id="calc-daily-usd" style="font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); padding: 12px 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Est. Monthly DOOM</div>
+            <div id="calc-monthly-doom" style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOOMSDAY MINING POOL PROTOCOL -->
+      <div class="section-header">
+        <div class="section-title">🏊 Doomsday Mining Pool (Zero Fee PPLNS)</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Proportional Reward Sharing • Instant Wallet Payouts</div>
+      </div>
+
+      <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Pool Hashrate</div>
+            <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;" id="pool-hashrate">0.00 MH/s</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Active Miners</div>
+            <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;" id="pool-active-miners">0 Workers</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Pool Blocks Found</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--green); margin-top: 4px;" id="pool-blocks-found">0</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Pool Fee</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--accent); margin-top: 4px;">0.0% (Zero Fee)</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Share Target</div>
+            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 6px; font-family: 'JetBrains Mono', monospace;">0x1e0fffff</div>
+          </div>
+        </div>
+
+        <!-- WORKER LOOKUP & PAYOUT -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 18px; border-radius: 10px;">
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #fff;">🔎 Worker Share &amp; Unpaid Balance Lookup</div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <input type="text" id="pool-worker-input" placeholder="Enter your DOOM address (doom1...)" style="flex: 1; min-width: 280px;">
+            <button onclick="lookupPoolWorker()" style="background: var(--card-border); border: 1px solid rgba(255,255,255,0.2);">Check Worker</button>
+          </div>
+          <div id="pool-worker-result" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--card-border);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+              <div>
+                <span style="font-size: 11px; color: var(--text-muted);">Status:</span>
+                <div id="worker-status-badge" style="font-weight: 700; font-size: 14px;">-</div>
+              </div>
+              <div>
+                <span style="font-size: 11px; color: var(--text-muted);">Hashrate:</span>
+                <div id="worker-hashrate-val" style="font-weight: 700; font-size: 14px;">-</div>
+              </div>
+              <div>
+                <span style="font-size: 11px; color: var(--text-muted);">Round Shares:</span>
+                <div id="worker-shares-val" style="font-weight: 700; font-size: 14px;">-</div>
+              </div>
+              <div>
+                <span style="font-size: 11px; color: var(--text-muted);">Unpaid Balance:</span>
+                <div id="worker-unpaid-val" style="font-weight: 800; font-size: 15px; color: var(--green);">-</div>
+              </div>
+            </div>
+            <div style="margin-top: 14px; display: flex; align-items: center; gap: 12px;">
+              <button id="btn-pool-claim" onclick="claimPoolPayout()" style="background: linear-gradient(135deg, var(--green) 0%, #059669 100%); padding: 8px 18px; font-size: 13px;">💰 Request Payout to Wallet</button>
+              <span id="pool-payout-status" style="font-size: 12px; font-family: 'JetBrains Mono', monospace;"></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); border: 1px dashed var(--card-border); padding: 14px 18px; border-radius: 8px; font-size: 12px; color: var(--text-muted);">
+          <strong style="color: #fff;">CLI Pool Miner Command (or use the Windows Desktop GUI App above):</strong>
+          <div style="margin-top: 8px; font-family: 'JetBrains Mono', monospace; color: var(--accent); user-select: all;">
+            python -m miner.sentinel --pool https://doomsday.network --wallet &lt;YOUR_ADDRESS&gt;
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- WORKSPACE 4: wDOOM DEFI MARKET & P2P VALIDATING NODES              -->
+    <!-- ================================================================== -->
+    <div id="wspace-pane-defi" style="display: none;">
+      <!-- LIVE BASE L2 MARKET & EMBEDDED DEX CHART -->
+      <div class="wallet-box" style="margin-bottom: 28px; flex-direction: column; align-items: stretch; gap: 16px; border-color: rgba(0, 255, 136, 0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span style="font-weight: 800; font-size: 15px; color: #fff;">📊 wDOOM / WETH Live Market (Base Mainnet)</span>
+            <span id="dex-price-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--green); background: rgba(16, 185, 129, 0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">Loading Price...</span>
+            <span id="dex-change-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"></span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button onclick="toggleDexChart()" id="btn-toggle-chart" style="background: rgba(0, 255, 136, 0.12); border: 1px solid rgba(0, 255, 136, 0.4); color: #00ff88; padding: 6px 14px; font-size: 12px;">📈 Show Live Embedded Chart</button>
+            <a href="https://app.uniswap.org/explore/tokens/base/0x623c84A5E04bF715018203334b0eFE41696eBC3E" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #ff007a; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,0,122,0.35); background: rgba(255,0,122,0.08);">🦄 Swap on Uniswap</a>
+            <a href="https://www.geckoterminal.com/base/pools/0xf7217329574249d7b389404aecf2c582662f3659" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a3e635; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(163,230,53,0.35); background: rgba(163,230,53,0.08);">🦎 GeckoTerminal</a>
+            <a href="https://basescan.org/tx/0x0443cdb07aa02c45109858fa626a4d93c30c684ff882abd2ce5fe4c675fd67ed" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.08);">🔒 100% LP Burned (0x...dEaD)</a>
+            <a href="https://basescan.org/address/0x623c84A5E04bF715018203334b0eFE41696eBC3E#code" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.3);">✓ BaseScan Verified</a>
+          </div>
+        </div>
+        <div id="dex-chart-container" style="display: none; width: 100%; height: 460px; border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border);">
+          <iframe id="dex-chart-iframe" src="" style="width: 100%; height: 100%; border: 0;" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <!-- DECENTRALIZED P2P MESH & INDEPENDENT VALIDATING NODES -->
+      <div class="section-header">
+        <div class="section-title">🌐 P2P Wire Mesh &amp; Validating Nodes</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Independent Verification • OpSec Peer Redaction</div>
+      </div>
+
+      <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Active P2P Peers</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--green); margin-top: 4px;" id="p2p-peers-count">0 Peers</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Wire Protocol</div>
+            <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">DOOM v1.0.0</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Consensus Validation</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent); margin-top: 6px;">DoomHash PoW + ASERT</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Local Persistence</div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff; margin-top: 6px; font-family: 'JetBrains Mono', monospace;">doomsday.db (SQLite)</div>
+          </div>
+        </div>
+
+        <!-- PEERS TABLE -->
+        <div class="table-container" style="margin-bottom: 0; background: rgba(0,0,0,0.2);">
+          <table>
+            <thead>
+              <tr>
+                <th>Node ID</th>
+                <th>Peer Address</th>
+                <th>Tip Height</th>
+                <th>Latency</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="peers-table-body">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                  <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">Seed Authority Standing Vigil (Port 8334)</div>
+                  <div>Awaiting peer connections. Launch a full node below to expand the sovereign P2P mesh!</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details style="background: rgba(255, 51, 68, 0.04); border: 1px solid rgba(255, 51, 68, 0.2); padding: 14px 18px; border-radius: 10px;">
+          <summary style="cursor: pointer; font-weight: 700; font-size: 13px; color: #fff; font-family: 'JetBrains Mono', monospace; user-select: none;">
+            ⚡ Want to Run Your Own Validating Full Node? Click for 1-Command Launch
+          </summary>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 10px 0;">
+            Run an independent full node to verify block hashes, enforce ASERT difficulty retargets, and keep your own local SQLite copy of the blockchain ledger (peer IPs are automatically OpSec-masked):
+          </p>
+          <div style="background: #09090c; border: 1px solid var(--card-border); padding: 10px 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); user-select: all; word-break: break-all;">
+            python -m node.server --host 0.0.0.0 --web-port 8334 --peer doomsday.network:8334
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -940,8 +996,39 @@
         }
         document.getElementById('val-supply').innerText = `${data.total_mined_doom.toLocaleString()} DOOM`;
         document.getElementById('val-diff').innerText = data.difficulty_bits;
+        const halvingPill = document.getElementById('header-halving-pill');
+        if (halvingPill && data.height !== undefined) {
+          const blocksLeft = Math.max(0, 210000 - (data.height % 210000));
+          halvingPill.innerHTML = `20s Block Target • Halving in <strong>${blocksLeft.toLocaleString()}</strong> blks`;
+        }
       } catch (e) {
         console.error('Error fetching status', e);
+      }
+    }
+
+    const expandedBlockHeights = new Set();
+
+    function switchMainWorkspace(tabName) {
+      const names = ['explorer', 'faucet', 'mining', 'defi'];
+      names.forEach(n => {
+        const btn = document.getElementById(`wspace-btn-${n}`);
+        const pane = document.getElementById(`wspace-pane-${n}`);
+        if (btn && pane) {
+          if (n === tabName) {
+            btn.classList.add('active');
+            pane.style.display = 'block';
+          } else {
+            btn.classList.remove('active');
+            pane.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    function openDexChart() {
+      const container = document.getElementById('dex-chart-container');
+      if (container && container.style.display === 'none') {
+        toggleDexChart();
       }
     }
 
@@ -973,9 +1060,10 @@
             <td style="color: var(--text-muted);">${timeStr}</td>
           `;
 
-          // Expandable transaction drawer
+          // Expandable transaction drawer (persists across block refreshes)
           const detailRow = document.createElement('tr');
-          detailRow.style.display = 'none';
+          const isOpen = expandedBlockHeights.has(b.height);
+          detailRow.style.display = isOpen ? 'table-row' : 'none';
           detailRow.style.background = 'rgba(255, 255, 255, 0.02)';
 
           let txHtml = `<div style="padding: 14px 20px; font-size: 13px; line-height: 1.6;">
@@ -1004,7 +1092,13 @@
           detailRow.innerHTML = `<td colspan="7" style="padding: 0;">${txHtml}</td>`;
 
           row.addEventListener('click', () => {
-            detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
+            const currentlyHidden = detailRow.style.display === 'none';
+            detailRow.style.display = currentlyHidden ? 'table-row' : 'none';
+            if (currentlyHidden) {
+              expandedBlockHeights.add(b.height);
+            } else {
+              expandedBlockHeights.delete(b.height);
+            }
           });
 
           tbody.appendChild(row);
@@ -1162,6 +1256,7 @@
           if (banner) banner.style.display = 'block';
           if (label) label.innerText = ref.slice(0, 14) + '...';
           if (btn) btn.innerText = 'Claim 15 DOOM (+50% Bonus) 🎁';
+          switchMainWorkspace('faucet');
           switchWalletTab('faucet');
         }
       } catch (e) {}
@@ -1510,6 +1605,8 @@
         if (pair.priceUsd) {
           liveDexPriceUsd = parseFloat(pair.priceUsd) || liveDexPriceUsd;
           if (priceEl) priceEl.innerText = `$${pair.priceUsd} USD`;
+          const marketSubEl = document.getElementById('val-market-sub');
+          if (marketSubEl) marketSubEl.innerHTML = `wDOOM: <span style="color: var(--green); font-weight: 700;">$${escapeHtml(pair.priceUsd)}</span> • ASERT (20s)`;
         }
         if (changeEl) {
           const chg = pair.priceChange && pair.priceChange.h24 !== undefined ? Number(pair.priceChange.h24) : 0;

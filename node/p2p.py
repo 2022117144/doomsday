@@ -171,6 +171,27 @@ class P2PManager:
                         ok, msg = self.chain.add_external_block(b)
                         if ok:
                             accepted_count += 1
+                        elif "Parent hash mismatch" in msg and peer.height > self.chain.get_tip().height:
+                            fork_h = max(1, b.height - 6)
+                            r_resp = await client.get(
+                                f"{peer.url}/p2p/blocks",
+                                params={"start_height": fork_h, "limit": 25},
+                                timeout=15.0
+                            )
+                            if r_resp.status_code == 200:
+                                r_blocks = [Block.from_dict(rb) for rb in r_resp.json()]
+                                for idx_r in range(len(r_blocks)):
+                                    cand_sub = r_blocks[idx_r:]
+                                    if cand_sub and cand_sub[0].height >= 1:
+                                        r_ok, _ = self.chain.reorg_chain(cand_sub[0].height, cand_sub)
+                                        if r_ok:
+                                            accepted_count += len(cand_sub)
+                                            break
+                                else:
+                                    print(f"[P2P Sync] Block #{b.height} reorg failed: {msg}")
+                                    self.is_syncing = False
+                                    return
+                                break
                         elif "already in ledger" not in msg:
                             print(f"[P2P Sync] Block #{b.height} verification failed: {msg}")
                             self.is_syncing = False

@@ -273,6 +273,74 @@ class Blockchain:
         print(f"\n[Blockchain] [P2P] Block #{block.height} accepted via Wire Gossip | Hash: {block.hash[:16]}...")
         return True, "Accepted"
 
+    def reorg_chain(self, fork_height: int, candidate_blocks: List[Block], max_reorg_depth: int = 12) -> Tuple[bool, str]:
+        """
+        Safely reorganize the tip of the ledger onto a longer valid peer branch
+        when a shallow 1-to-N block orphan split occurs.
+        """
+        tip = self.get_tip()
+        if not candidate_blocks:
+            return False, "Empty candidate branch"
+        if fork_height < 1 or fork_height > tip.height:
+            return False, f"Invalid fork height {fork_height}"
+        if (tip.height - fork_height + 1) > max_reorg_depth:
+            return False, f"Reorg depth exceeds finality guard ({max_reorg_depth} blocks)"
+        if candidate_blocks[-1].height <= tip.height:
+            return False, "Candidate branch is not longer than local chain"
+
+        temp_blocks = list(self.blocks[:fork_height])
+        temp_utxos: Dict[str, Tuple[str, int]] = {}
+        for b in temp_blocks:
+            for tx in b.transactions:
+                if not tx.is_coinbase:
+                    for inp in tx.inputs:
+                        temp_utxos.pop(f"{inp.txid}:{inp.vout}", None)
+                for vout, out in enumerate(tx.outputs):
+                    temp_utxos[f"{tx.txid}:{vout}"] = (out.recipient, out.amount)
+
+        for cand in candidate_blocks:
+            if cand.height < fork_height:
+                continue
+            prev_b = temp_blocks[-1]
+            if cand.height != prev_b.height + 1:
+                return False, f"Reorg height gap at #{cand.height}"
+            if cand.header.prev_hash != prev_b.hash:
+                return False, f"Reorg parent mismatch at #{cand.height}"
+            anchor_b = temp_blocks[max(0, len(temp_blocks) - 10)]
+            exp_bits = calculate_next_bits(prev_b, anchor_b, current_timestamp=cand.header.timestamp) if len(temp_blocks) > 1 else INITIAL_BITS
+            ok, reason = validate_block(cand, prev_b, temp_utxos, expected_bits=exp_bits)
+            if not ok:
+                return False, f"Invalid candidate block #{cand.height}: {reason}"
+
+            temp_blocks.append(cand)
+            for tx in cand.transactions:
+                if not tx.is_coinbase:
+                    for inp in tx.inputs:
+                        temp_utxos.pop(f"{inp.txid}:{inp.vout}", None)
+                for vout, out in enumerate(tx.outputs):
+                    temp_utxos[f"{tx.txid}:{vout}"] = (out.recipient, out.amount)
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM blocks WHERE height >= ?", (fork_height,))
+            for cand in temp_blocks[fork_height:]:
+                cursor.execute(
+                    "INSERT INTO blocks (height, hash, header_json, txs_json, timestamp) VALUES (?, ?, ?, ?, ?)",
+                    (
+                        cand.height,
+                        cand.hash,
+                        json.dumps(cand.header.to_dict()),
+                        json.dumps([tx.to_dict() for tx in cand.transactions]),
+                        cand.header.timestamp
+                    )
+                )
+            conn.commit()
+
+        self.blocks = temp_blocks
+        self.utxo_set = temp_utxos
+        print(f"\n[Blockchain] [Reorg] Switched from orphan fork at #{fork_height} to canonical tip #{self.get_tip().height}")
+        return True, "Reorg complete"
+
     def get_mempool_spent_outpoints(self) -> set:
         """Return set of outpoints currently spent by pending transactions in mempool."""
         spent = set()

@@ -14,5 +14,14 @@
     "hashrate": "2,630.0 MH/s",
     "doom_address": "doom1d7e5f1304dd527f00f0fa49ab187174693d410de4be04e78",
     "verified_onchain": true
+  },
+  {
+    "github_user": "ub3dqy",
+    "device": "Intel Xeon E5-2667 v4 @ 3.20GHz (CPython 3.11.9 Windows AMD64)",
+    "mode": "CPU (Single-Thread Python Reference)",
+    "hashrate": "21.6 kH/s",
+    "base_evm_address": "0x6dD17C1D6CAd9D230F92bC193D0cF1D398e0CBD3",
+    "l1_vault_txid": "e393215cc1265ba1c4b23c977b3f5e6e8428742b9d72b114d31f4efca31aa8ab",
+    "verified_onchain": true
   }
 ]

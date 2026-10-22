@@ -21,7 +21,8 @@
     "mode": "CPU (Single-Thread Python Reference)",
     "hashrate": "21.6 kH/s",
     "base_evm_address": "0x6dD17C1D6CAd9D230F92bC193D0cF1D398e0CBD3",
-    "l1_vault_txid": "e393215cc1265ba1c4b23c977b3f5e6e8428742b9d72b114d31f4efca31aa8ab",
+    "l1_vault_txid": "9ab746a9179873cb106cf7b836e861ca507b6f5318ea02aa42c6c0001fd9a731",
+    "basescan_mint_tx": "0xd90ad8c459bea6fd0da3438fbe24517801bcaf595691db7d3831237fdc33446f",
     "verified_onchain": true
   }
 ]

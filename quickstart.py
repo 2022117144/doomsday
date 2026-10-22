@@ -18,8 +18,10 @@ What this script does in 3 seconds (using 100% Python standard library):
 import hashlib
 import json
 import os
+import platform
 import secrets
 import struct
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -206,6 +208,15 @@ def show_network_and_next_steps(wallet: dict) -> None:
 
 
 def main() -> None:
+    if "--offline-benchmark" in sys.argv:
+        print("=====================================================================")
+        print("⚡ DOOMSDAY NETWORK (DOOM) — OFFLINE CPU REFERENCE BENCHMARK")
+        print("=====================================================================")
+        print(f"Platform: {platform.system()} {platform.release()} ({platform.machine()}) | Python {platform.python_version()}")
+        print(f"Processor: {platform.processor() or 'Generic x64/ARM64'}")
+        run_benchmark(2.0)
+        return
+
     print("=====================================================================")
     print("⚡ DOOMSDAY NETWORK (DOOM) — 1-COMMAND QUICKSTART & FAUCET CLAIMER")
     print("=====================================================================")

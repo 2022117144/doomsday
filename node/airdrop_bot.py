@@ -32,6 +32,7 @@ WATCHED_ISSUES = [
     ("doomsday-network/doomsday", 4, 500.0),
     ("doomsday-network/doomsday", 7, 2500.0),
     ("doomsday-network/bounty-guard", 1, 500.0),
+    ("doomsday-network/bounty-guard", 4, 2500.0),
 ]
 
 DOOM_REGEX = re.compile(r"\b(doom1[a-fA-F0-9]{48})\b")
@@ -259,7 +260,7 @@ def poll_once(gh_token: str) -> None:
                 _save_state(state)
                 continue
 
-            if repo == "doomsday-network/doomsday" and issue_num == 7:
+            if reward_doom >= 2500.0:
                 if not _has_verified_pool_activity(body):
                     print(f"[AirdropBot] Skipping unverified pool claim by @{user} on {repo}#{issue_num}")
                     _save_state(state)

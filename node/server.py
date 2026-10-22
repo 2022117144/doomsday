@@ -748,6 +748,105 @@ def get_bridge_audit():
     }
 
 
+class PrivateBountyClaimRequest(BaseModel):
+    github_user: str
+    wallet_address: str
+
+
+PRIVATE_BOUNTY_ELIGIBLE: Dict[str, float] = {
+    "pythonyx135793": 500.0,
+    "juanmigueldacostaabella-boop": 500.0,
+}
+private_bounty_claimed: set = set()
+
+
+@app.get("/bounty/claim", response_class=HTMLResponse)
+def get_private_bounty_claim_form():
+    return """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Doomsday Network — Private Bounty Claim</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{background:#0b0c10;color:#e5e7eb;font-family:system-ui,-apple-system,sans-serif;display:flex;justify-content:center;align-items:center;min-height:95vh;margin:0}
+.card{background:#12151e;border:1px solid #262b3d;border-radius:12px;padding:28px;max-width:480px;width:92%;box-shadow:0 12px 32px rgba(0,0,0,0.5)}
+h2{margin-top:0;color:#ff4d4d}
+label{display:block;font-size:13px;color:#9ca3af;margin:14px 0 6px}
+input{width:100%;box-sizing:border-box;padding:10px 12px;background:#0b0c10;border:1px solid #374151;border-radius:8px;color:#fff;font-family:monospace;font-size:14px}
+button{margin-top:18px;width:100%;padding:12px;background:#ff4d4d;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:15px}
+#res{margin-top:16px;font-size:13px;word-break:break-all;color:#34d399}
+</style></head><body><div class="card">
+<h2>🔒 Private Bounty Payout Form</h2>
+<p style="font-size:13px;color:#9ca3af;line-height:1.5">Submit your Base Mainnet (<code>0x...</code>) or Doomsday L1 (<code>doom1...</code>) address privately over TLS 1.3. Your address is never posted to GitHub.</p>
+<label>GitHub Username (with verified benchmark on Issue #4)</label>
+<input id="gh" placeholder="e.g. pythonyx135793" />
+<label>Base Mainnet (0x...) or Doomsday (doom1...) Address</label>
+<input id="wa" placeholder="0x... or doom1..." />
+<button onclick="sub()">Claim Bounty Privately</button>
+<div id="res"></div>
+</div>
+<script>
+async function sub(){
+  const r = document.getElementById('res');
+  r.style.color='#9ca3af'; r.textContent='Submitting private claim...';
+  const res = await fetch('/bounty/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({github_user:document.getElementById('gh').value.trim(),wallet_address:document.getElementById('wa').value.trim()})});
+  const d = await res.json();
+  if(res.ok){ r.style.color='#34d399'; r.textContent='Success! On-chain TxID: '+d.txid+' ('+d.amount_doom+' wDOOM/DOOM dispensed)'; }
+  else { r.style.color='#f87171'; r.textContent='Error: '+(d.detail||'Failed'); }
+}
+</script></body></html>"""
+
+
+@app.post("/bounty/claim")
+async def submit_private_bounty_claim(req: PrivateBountyClaimRequest):
+    user_clean = req.github_user.strip().lstrip("@").lower()
+    wallet_clean = req.wallet_address.strip()
+    if user_clean not in PRIVATE_BOUNTY_ELIGIBLE:
+        raise HTTPException(status_code=403, detail="GitHub username not in pre-approved private claim list. Post your benchmark on Issue #4 first.")
+    if user_clean in private_bounty_claimed:
+        raise HTTPException(status_code=409, detail="Private bounty already claimed for this GitHub user.")
+    is_evm = wallet_clean.lower().startswith("0x") and len(wallet_clean) == 42
+    is_doom = wallet_clean.lower().startswith("doom1") and len(wallet_clean) == 53
+    if not (is_evm or is_doom):
+        raise HTTPException(status_code=400, detail="Invalid Base (0x...) or Doomsday (doom1...) wallet address.")
+
+    faucet = load_faucet_wallet()
+    if not faucet:
+        raise HTTPException(status_code=503, detail="Faucet wallet not loaded.")
+    reward_doom = PRIVATE_BOUNTY_ELIGIBLE[user_clean]
+    sparks_needed = int(reward_doom * COIN)
+
+    from core.crypto import private_key_from_wif
+    priv = private_key_from_wif(faucet["private_key"])
+    inputs = []
+    accum = 0
+    mempool_spent = chain.get_mempool_spent_outpoints()
+    for outpoint, (rcpt, amt) in chain.utxo_set.items():
+        if rcpt == faucet["address"] and outpoint not in mempool_spent:
+            txid, vout = outpoint.split(":")
+            inputs.append(TxInput(txid=txid, vout=int(vout)))
+            accum += amt
+            if accum >= sparks_needed:
+                break
+    if accum < sparks_needed:
+        raise HTTPException(status_code=503, detail="Faucet UTXO currently busy confirming block; retry in 15 seconds.")
+
+    target_rcpt = "doom1vault000000000000000000000000000000" if is_evm else wallet_clean.lower()
+    extra_memo = wallet_clean if is_evm else "Private Bounty Claim"
+    outputs = [TxOutput(recipient=target_rcpt, amount=sparks_needed)]
+    change = accum - sparks_needed
+    if change > 0:
+        outputs.append(TxOutput(recipient=faucet["address"], amount=change))
+    tx = Transaction(inputs=inputs, outputs=outputs, extra_data=extra_memo)
+    for idx in range(len(inputs)):
+        tx.sign_input(idx, priv)
+    ok, reason = chain.add_transaction_to_mempool(tx)
+    if not ok:
+        raise HTTPException(status_code=400, detail=reason)
+    private_bounty_claimed.add(user_clean)
+    await broadcast_event("new_tx", tx.to_dict())
+    asyncio.create_task(p2p.broadcast_tx(tx))
+    return {"status": "success", "txid": tx.txid, "amount_doom": reward_doom}
+
+
 @app.post("/faucet/claim")
 async def claim_faucet(req: FaucetClaimRequest, request: Request):
     faucet = load_faucet_wallet()

@@ -197,10 +197,10 @@ def _has_verified_pool_activity(body: str) -> bool:
             req = urllib.request.Request(f"{NODE_API}/pool/worker/{addr}")
             w = json.loads(urllib.request.urlopen(req, timeout=10).read().decode())
             if (
-                w.get("round_shares", 0) >= 1
-                or w.get("unpaid_doom", 0.0) > 0.0
+                w.get("round_shares", 0) >= 10
+                or w.get("unpaid_doom", 0.0) >= 0.25
                 or w.get("total_paid_doom", 0.0) > 0.0
-                or w.get("hashrate_mhs", 0.0) > 0.0
+                or w.get("hashrate_mhs", 0.0) >= 1.0
             ):
                 return True
         except Exception:
@@ -261,6 +261,12 @@ def poll_once(gh_token: str) -> None:
                 continue
 
             if reward_doom >= 2500.0:
+                p_u = f"pool_2500:{user.lower()}"
+                p_w = f"pool_2500:{wallet.lower()}"
+                existing_keys = [k.lower() for k in state.get("paid_issue_users", [])]
+                if p_u in existing_keys or p_w in existing_keys or user.lower() == "ramgox":
+                    _save_state(state)
+                    continue
                 if not _has_verified_pool_activity(body):
                     print(f"[AirdropBot] Skipping unverified pool claim by @{user} on {repo}#{issue_num}")
                     _save_state(state)
@@ -281,6 +287,9 @@ def poll_once(gh_token: str) -> None:
             state["paid_wallets"].append(wallet.lower())
             state.setdefault("paid_issue_users", []).append(issue_user_key)
             state["paid_issue_users"].append(issue_wallet_key)
+            if reward_doom >= 2500.0:
+                state["paid_issue_users"].append(f"pool_2500:{user.lower()}")
+                state["paid_issue_users"].append(f"pool_2500:{wallet.lower()}")
             _save_state(state)
 
             if gh_token:

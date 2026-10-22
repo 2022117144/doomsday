@@ -150,19 +150,65 @@ def claim_free_faucet(address: str) -> str:
     return ""
 
 
-def run_benchmark(seconds: float = 1.5) -> float:
+def run_benchmark(seconds: float = 1.5, wallet_address: str = "") -> float:
     print(f"\n[*] Running {seconds:.1f}s DoomHash Proof-of-Work benchmark...")
     prefix = b"DOOMSDAY_BENCHMARK_HEADER"
+    job = None
+    target_high = 0x00000FFFFF000000
+    if wallet_address:
+        try:
+            req_j = urllib.request.Request(
+                f"{NODE_URL}/pool/job?worker_address={wallet_address}&worker_name=Quickstart-Node",
+                headers={"User-Agent": "DoomQuickstart/1.0"},
+            )
+            job = json.loads(urllib.request.urlopen(req_j, timeout=4).read().decode("utf-8"))
+            if job.get("header_prefix_hex"):
+                prefix = bytes.fromhex(job["header_prefix_hex"])
+                target_high = int(job.get("target_high", target_high))
+        except Exception:
+            job = None
+
     start = time.perf_counter()
-    nonce = 0
+    nonce = secrets.randbelow(1 << 32) if job else 0
+    count = 0
+    winning_nonces = []
     while time.perf_counter() - start < seconds:
         for _ in range(250):
-            doom_hash_ref(prefix, nonce)
+            digest = doom_hash_ref(prefix, nonce)
+            if job and len(winning_nonces) < 3:
+                if int.from_bytes(digest[:8], "big") < target_high:
+                    winning_nonces.append(nonce)
             nonce += 1
+            count += 1
     elapsed = time.perf_counter() - start
-    kh_s = (nonce / elapsed) / 1000.0
+    kh_s = (count / elapsed) / 1000.0
     print(f"    -> Single-Thread Python Reference Rate: {kh_s:,.1f} kH/s")
     print("    -> Native CUDA GPU Miner (DoomsdaySentinel): 2,600 - 15,000+ MH/s (~100,000x faster!)")
+
+    if job and wallet_address and winning_nonces:
+        accepted = 0
+        for wn in winning_nonces:
+            try:
+                sub_payload = json.dumps({
+                    "height": job["height"],
+                    "nonce": wn,
+                    "worker_address": wallet_address,
+                    "worker_name": "Quickstart-Node",
+                    "timestamp": job.get("timestamp"),
+                }).encode("utf-8")
+                req_s = urllib.request.Request(
+                    f"{NODE_URL}/pool/submit",
+                    data=sub_payload,
+                    headers={"Content-Type": "application/json", "User-Agent": "DoomQuickstart/1.0"},
+                    method="POST",
+                )
+                res_s = json.loads(urllib.request.urlopen(req_s, timeout=4).read().decode("utf-8"))
+                if res_s.get("accepted"):
+                    accepted += 1
+            except Exception:
+                pass
+        if accepted > 0:
+            print(f"    [+] Submitted {accepted} live PoW share(s) to Doomsday Pool (Block #{job['height']})!")
     return kh_s
 
 
@@ -227,8 +273,15 @@ def main() -> None:
         print(f"[+] Loaded existing secp256k1 DOOM wallet -> ./{WALLET_FILE}")
     print(f"    Address: {wallet['address']}")
     claim_free_faucet(wallet["address"])
-    run_benchmark()
+    run_benchmark(1.5, wallet["address"])
     show_network_and_next_steps(wallet)
+    if "--mine" in sys.argv:
+        print(f"[*] Continuous Pool Mining Active for {wallet['address']} (Press Ctrl+C to stop)...")
+        while True:
+            try:
+                run_benchmark(5.0, wallet["address"])
+            except KeyboardInterrupt:
+                break
 
 
 if __name__ == "__main__":

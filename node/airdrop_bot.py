@@ -30,6 +30,7 @@ WATCHED_ISSUES = [
     ("doomsday-network/doomsday", 2, 250.0),
     ("doomsday-network/doomsday", 3, 500.0),
     ("doomsday-network/doomsday", 4, 500.0),
+    ("doomsday-network/doomsday", 7, 2500.0),
     ("doomsday-network/bounty-guard", 1, 500.0),
 ]
 
@@ -142,7 +143,15 @@ def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[
     outputs: List[TxOutput] = [TxOutput(recipient=target_rcpt, amount=sparks_needed)]
     change = accum - sparks_needed
     if change > 0:
-        outputs.append(TxOutput(recipient=sender_addr, amount=change))
+        if len(utxos) <= 4 and change >= int(2000 * COIN):
+            num_splits = 8
+            split_amt = change // num_splits
+            rem = change - (split_amt * (num_splits - 1))
+            for i in range(num_splits - 1):
+                outputs.append(TxOutput(recipient=sender_addr, amount=split_amt))
+            outputs.append(TxOutput(recipient=sender_addr, amount=rem))
+        else:
+            outputs.append(TxOutput(recipient=sender_addr, amount=change))
 
     tx = Transaction(inputs=inputs, outputs=outputs, extra_data=extra_memo)
     for idx in range(len(inputs)):
@@ -176,6 +185,26 @@ def _get_base_wdoom_balance(evm_wallet: str) -> float:
         return int(res, 16) / 1e18
     except Exception:
         return 0.0
+
+
+def _has_verified_pool_activity(body: str) -> bool:
+    for cand in DOOM_REGEX.findall(body):
+        addr = cand.lower()
+        if addr in IGNORED_DOOM_ADDRESSES:
+            continue
+        try:
+            req = urllib.request.Request(f"{NODE_API}/pool/worker/{addr}")
+            w = json.loads(urllib.request.urlopen(req, timeout=10).read().decode())
+            if (
+                w.get("round_shares", 0) >= 1
+                or w.get("unpaid_doom", 0.0) > 0.0
+                or w.get("total_paid_doom", 0.0) > 0.0
+                or w.get("hashrate_mhs", 0.0) > 0.0
+            ):
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def _extract_user_wallet(body: str) -> Optional[str]:
@@ -229,6 +258,12 @@ def poll_once(gh_token: str) -> None:
             ]:
                 _save_state(state)
                 continue
+
+            if repo == "doomsday-network/doomsday" and issue_num == 7:
+                if not _has_verified_pool_activity(body):
+                    print(f"[AirdropBot] Skipping unverified pool claim by @{user} on {repo}#{issue_num}")
+                    _save_state(state)
+                    continue
 
             print(f"[AirdropBot] New valid claim by @{user} on {repo}#{issue_num} -> {wallet} ({reward_doom} DOOM)")
             pre_base_bal = _get_base_wdoom_balance(wallet) if wallet.lower().startswith("0x") else 0.0

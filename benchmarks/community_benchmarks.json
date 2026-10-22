@@ -26,6 +26,15 @@
     "verified_onchain": true
   },
   {
+    "github_user": "segunmicheal27",
+    "device": "Intel Xeon E5-2667 v4 @ 3.20GHz (CPython 3.11.9 Windows AMD64)",
+    "mode": "CPU (Single-Thread Python Reference)",
+    "hashrate": "21.6 kH/s",
+    "base_evm_address": "0xD490ef1fc38bEC571a02a6168a12C96528C0a001",
+    "l1_vault_txid": "3126ea00bd86f39d0f032f4bae8b18a8415ac7657c73fb7ab99d2274c387f623",
+    "verified_onchain": true
+  },
+  {
     "github_user": "ducanh3005",
     "device": "Intel Core i5-14400F (CPython 3.10.11 Windows 10 AMD64)",
     "mode": "CPU (Single-Thread Python Reference)",
@@ -41,6 +50,7 @@
     "hashrate": "2,114.1 MH/s",
     "doom_address": "doom16cf1dcb569605f3fa5437effbab253416c9c98d4f7b72011",
     "base_evm_address": "0xdF4Ff9D2f45f99f11A90b16F277D4B7EddDB72A5",
+    "l1_txid": "797559bca0ffcd1481962807eee83aefdc23af4625bfb2ca393847443eeaf693",
     "verified_onchain": true
   }
 ]

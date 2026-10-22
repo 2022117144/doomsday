@@ -1,0 +1,18 @@
+[
+  {
+    "github_user": "doomsday-network",
+    "device": "NVIDIA RTX 5080 (CUDA PTX DoomHash)",
+    "mode": "GPU (CUDA)",
+    "hashrate": "6,900.0 MH/s",
+    "doom_address": "doom12da148685b855223a3cd830058e227d8369b5aac8e96db05",
+    "verified_onchain": true
+  },
+  {
+    "github_user": "doomsday-network",
+    "device": "NVIDIA RTX 4060 Ti (CUDA PTX DoomHash)",
+    "mode": "GPU (CUDA)",
+    "hashrate": "2,630.0 MH/s",
+    "doom_address": "doom1d7e5f1304dd527f00f0fa49ab187174693d410de4be04e78",
+    "verified_onchain": true
+  }
+]

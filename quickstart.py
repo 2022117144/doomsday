@@ -119,7 +119,7 @@ def doom_hash_ref(header_prefix_bytes: bytes, nonce: int) -> bytes:
     return hashlib.sha256(packed).digest()
 
 
-def claim_free_faucet(address: str) -> None:
+def claim_free_faucet(address: str) -> str:
     print(f"[*] Requesting 15.0 Free DOOM from live Faucet for {address}...")
     payload = json.dumps({
         "recipient_address": address,
@@ -133,8 +133,10 @@ def claim_free_faucet(address: str) -> None:
     )
     try:
         resp = json.loads(urllib.request.urlopen(req, timeout=10).read().decode("utf-8"))
+        txid = str(resp.get("txid", ""))
         print(f"    [+] SUCCESS! Dispensed {resp.get('amount_doom', 15.0)} DOOM on-chain!")
-        print(f"    [+] Transaction ID: {resp.get('txid')}")
+        print(f"    [+] Transaction ID: {txid}")
+        return txid
     except urllib.error.HTTPError as e:
         try:
             err_body = json.loads(e.read().decode("utf-8"))
@@ -143,6 +145,7 @@ def claim_free_faucet(address: str) -> None:
             print(f"    [i] Faucet note: HTTP {e.code}")
     except Exception as e:
         print(f"    [i] Could not reach faucet ({e})")
+    return ""
 
 
 def run_benchmark(seconds: float = 1.5) -> float:
@@ -169,11 +172,14 @@ def show_network_and_next_steps(wallet: dict) -> None:
         lb = json.loads(urllib.request.urlopen(req_lb, timeout=10).read().decode("utf-8"))
         leaders = lb.get("leaders", [])
         open_slots = max(0, 10 - len(leaders))
+        total_mined = status.get("total_mined_doom") or status.get("total_supply_doom") or 0
+        net_mhs = status.get("cluster_hashrate_mhs") or status.get("estimated_hashrate_mhs") or 0
+        workers = status.get("active_workers") or status.get("active_miners") or 0
         print("\n=====================================================================")
         print("🌍 DOOMSDAY NETWORK LIVE TELEMETRY & TOP-10 LEADERBOARD")
         print("=====================================================================")
-        print(f"Chain Height:     #{status.get('height')} ({status.get('total_supply_doom', 0):,.0f} DOOM mined)")
-        print(f"Network Hashrate: {status.get('estimated_hashrate_mhs', 0):,.2f} MH/s ({status.get('active_miners', 0)} active GPU rigs)")
+        print(f"Chain Height:     #{status.get('height')} ({total_mined:,.0f} DOOM mined)")
+        print(f"Network Hashrate: {net_mhs:,.2f} MH/s ({workers} active GPU rigs)")
         print(f"Block Reward:     50.0 DOOM / block (20s ASERT target, 0% Pool Fee)")
         print(f"Leaderboard:      {len(leaders)}/10 Ranked Miners ({open_slots} TOP-10 SLOTS OPEN!)")
         for idx, m in enumerate(leaders[:5], 1):

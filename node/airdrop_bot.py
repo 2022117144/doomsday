@@ -1,9 +1,9 @@
 """
-Autonomous GitHub Airdrop & Bounty Fulfillment Relayer (doomsday-airdrop.service)
-Polls GitHub issues on doomsday-network/doomsday and doomsday-network/bounty-guard
-for wallet claims (doom1... or Base 0x...), automatically broadcasts on-chain L1
-or Base Bridge Vault transactions from faucet_wallet.json, and replies on GitHub
-with live on-chain transaction proof.
+Autonomous GitHub Airdrop, Bounty & Benchmark PR Relayer (doomsday-airdrop.service)
+Polls GitHub issues and PRs on doomsday-network/doomsday and doomsday-network/bounty-guard
+for wallet claims (doom1... or Base 0x...) and verified benchmark PRs, automatically
+broadcasts on-chain L1 or Base Bridge Vault transactions from faucet_wallet.json,
+and replies on GitHub with live on-chain transaction proof.
 """
 
 import json
@@ -36,6 +36,27 @@ WATCHED_ISSUES = [
 DOOM_REGEX = re.compile(r"\b(doom1[a-fA-F0-9]{48})\b")
 EVM_REGEX = re.compile(r"\b(0x[a-fA-F0-9]{40})\b")
 
+IGNORED_EVM_ADDRESSES = {
+    WDOOM_CONTRACT.lower(),
+    "0xf7217329574249d7b389404aecf2c582662f3659",
+    "0x000000000000000000000000000000000000dead",
+    "0x0000000000000000000000000000000000000000",
+    "0x4200000000000000000000000000000000000006",
+    "0x484ed370ded0d36e36aad469a2afe5d69b1a005d",
+    # Known LLM documentation example placeholder addresses:
+    "0x89205a31c82f1253e151853b0224d5963e3e7231",
+    "0x89205a3a3b2a69de6dbf7f01ed13b2108b2c43e7",
+}
+
+IGNORED_DOOM_ADDRESSES = {
+    VAULT_ADDRESS.lower(),
+    "doom12da148685b855223a3cd830058e227d8369b5aac8e96db05",
+    "doom1d7e5f1304dd527f00f0fa49ab187174693d410de4be04e78",
+    "doom11a24b41c22883ea75906a157d6d7a334cc2554181b741afe",
+    "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
+    "doom12c148fe7e3b07ca9d29af1c59106c6b0866eaec79eb14919",
+}
+
 
 def _get_github_token() -> str:
     env_tok = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -59,6 +80,7 @@ def _load_state() -> Dict[str, Any]:
         "paid_users": ["rgentner123-cmd", "doomsday-network"],
         "paid_wallets": ["0xea3e727a1abe0bb2a3a653c5009f8515d8838a1e"],
         "processed_comments": [6341747616, 6341747853],
+        "processed_prs": [],
     }
     if os.path.exists(STATE_PATH):
         try:
@@ -128,6 +150,16 @@ def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[
     return resp.get("txid")
 
 
+def _extract_user_wallet(body: str) -> Optional[str]:
+    for cand in DOOM_REGEX.findall(body):
+        if cand.lower() not in IGNORED_DOOM_ADDRESSES:
+            return cand.lower()
+    for cand in EVM_REGEX.findall(body):
+        if cand.lower() not in IGNORED_EVM_ADDRESSES:
+            return cand
+    return None
+
+
 def poll_once(gh_token: str) -> None:
     state = _load_state()
     headers = {
@@ -159,22 +191,7 @@ def poll_once(gh_token: str) -> None:
                 _save_state(state)
                 continue
 
-            doom_m = DOOM_REGEX.search(body)
-            evm_m = EVM_REGEX.search(body)
-            wallet = None
-            if doom_m:
-                cand = doom_m.group(1).lower()
-                if cand != VAULT_ADDRESS and "12da148685b855" not in cand:
-                    wallet = cand
-            elif evm_m:
-                cand = evm_m.group(1)
-                if cand.lower() not in [
-                    WDOOM_CONTRACT.lower(),
-                    "0xf7217329574249d7b389404aecf2c582662f3659",
-                    "0x000000000000000000000000000000000000dead",
-                ]:
-                    wallet = cand
-
+            wallet = _extract_user_wallet(body)
             if not wallet or wallet.lower() in [w.lower() for w in state["paid_wallets"]]:
                 _save_state(state)
                 continue

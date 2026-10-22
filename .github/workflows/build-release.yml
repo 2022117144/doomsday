@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
@@ -43,6 +43,9 @@ jobs:
   build-desktop:
     name: Build & Package Desktop Client (Windows)
     needs: test
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
     runs-on: windows-latest
 
     steps:

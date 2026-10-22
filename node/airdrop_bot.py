@@ -79,6 +79,14 @@ def _load_state() -> Dict[str, Any]:
     default_state = {
         "paid_users": ["rgentner123-cmd", "doomsday-network"],
         "paid_wallets": ["0xea3e727a1abe0bb2a3a653c5009f8515d8838a1e"],
+        "paid_issue_users": [
+            "doomsday-network/doomsday#2:rgentner123-cmd",
+            "doomsday-network/doomsday#4:ub3dqy",
+            "doomsday-network/doomsday#4:segunmicheal27",
+            "doomsday-network/doomsday#4:ducanh3005",
+            "doomsday-network/doomsday#3:ducanh3005",
+            "doomsday-network/bounty-guard#1:ducanh3005",
+        ],
         "processed_comments": [6341747616, 6341747853],
         "processed_prs": [],
     }
@@ -207,12 +215,18 @@ def poll_once(gh_token: str) -> None:
                 continue
             state["processed_comments"].append(cid)
 
-            if user.lower() in [u.lower() for u in state["paid_users"]]:
+            issue_user_key = f"{repo}#{issue_num}:{user.lower()}"
+            if user.lower() == "doomsday-network" or issue_user_key in [
+                k.lower() for k in state.get("paid_issue_users", [])
+            ]:
                 _save_state(state)
                 continue
 
             wallet = _extract_user_wallet(body)
-            if not wallet or wallet.lower() in [w.lower() for w in state["paid_wallets"]]:
+            issue_wallet_key = f"{repo}#{issue_num}:{(wallet or '').lower()}"
+            if not wallet or issue_wallet_key in [
+                k.lower() for k in state.get("paid_issue_users", [])
+            ]:
                 _save_state(state)
                 continue
 
@@ -229,6 +243,8 @@ def poll_once(gh_token: str) -> None:
 
             state["paid_users"].append(user)
             state["paid_wallets"].append(wallet.lower())
+            state.setdefault("paid_issue_users", []).append(issue_user_key)
+            state["paid_issue_users"].append(issue_wallet_key)
             _save_state(state)
 
             if gh_token:
@@ -272,6 +288,15 @@ def poll_once(gh_token: str) -> None:
 
 
 def main() -> None:
+    import sys
+
+    if len(sys.argv) >= 4 and sys.argv[1] == "--send":
+        target_wallet = sys.argv[2]
+        amt = float(sys.argv[3])
+        txid = _send_onchain_reward(target_wallet, amt)
+        print(f"SENT_TXID:{txid}")
+        return
+
     print("=======================================================")
     print("[*] DOOMSDAY AUTONOMOUS GITHUB AIRDROP & BOUNTY RELAYER")
     print("=======================================================")

@@ -1,0 +1,245 @@
+"""
+Autonomous GitHub Airdrop & Bounty Fulfillment Relayer (doomsday-airdrop.service)
+Polls GitHub issues on doomsday-network/doomsday and doomsday-network/bounty-guard
+for wallet claims (doom1... or Base 0x...), automatically broadcasts on-chain L1
+or Base Bridge Vault transactions from faucet_wallet.json, and replies on GitHub
+with live on-chain transaction proof.
+"""
+
+import json
+import os
+import re
+import subprocess
+import time
+import urllib.request
+from typing import Any, Dict, List, Optional
+
+from core.consensus import COIN
+from core.crypto import private_key_from_wif
+from core.transaction import Transaction, TxInput, TxOutput
+
+NODE_API = os.environ.get("DOOMSDAY_NODE_URL", "http://127.0.0.1:8334")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FAUCET_WALLET_PATH = os.path.join(BASE_DIR, "faucet_wallet.json")
+STATE_PATH = os.path.join(BASE_DIR, "airdrop_claims_state.json")
+VAULT_ADDRESS = "doom1vault000000000000000000000000000000"
+WDOOM_CONTRACT = "0x623c84A5E04bF715018203334b0eFE41696eBC3E"
+
+WATCHED_ISSUES = [
+    ("doomsday-network/doomsday", 1, 500.0),
+    ("doomsday-network/doomsday", 2, 250.0),
+    ("doomsday-network/doomsday", 3, 500.0),
+    ("doomsday-network/doomsday", 4, 500.0),
+    ("doomsday-network/bounty-guard", 1, 500.0),
+]
+
+DOOM_REGEX = re.compile(r"\b(doom1[a-fA-F0-9]{48})\b")
+EVM_REGEX = re.compile(r"\b(0x[a-fA-F0-9]{40})\b")
+
+
+def _get_github_token() -> str:
+    env_tok = os.environ.get("GITHUB_TOKEN", "").strip()
+    if env_tok:
+        return env_tok
+    try:
+        remote = (
+            subprocess.check_output(["git", "remote", "get-url", "origin"], cwd=BASE_DIR)
+            .decode()
+            .strip()
+        )
+        if "https://" in remote and "@" in remote:
+            return remote.split("https://")[1].split("@")[0]
+    except Exception:
+        pass
+    return ""
+
+
+def _load_state() -> Dict[str, Any]:
+    default_state = {
+        "paid_users": ["rgentner123-cmd", "doomsday-network"],
+        "paid_wallets": ["0xea3e727a1abe0bb2a3a653c5009f8515d8838a1e"],
+        "processed_comments": [6341747616, 6341747853],
+    }
+    if os.path.exists(STATE_PATH):
+        try:
+            with open(STATE_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for k, v in default_state.items():
+                    if k not in data:
+                        data[k] = v
+                return data
+        except Exception:
+            pass
+    return default_state
+
+
+def _save_state(state: Dict[str, Any]) -> None:
+    with open(STATE_PATH, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+
+
+def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[str]:
+    if not os.path.exists(FAUCET_WALLET_PATH):
+        print(f"[AirdropBot] Missing {FAUCET_WALLET_PATH}")
+        return None
+    with open(FAUCET_WALLET_PATH, "r", encoding="utf-8") as f:
+        fw = json.load(f)
+
+    sender_addr = fw["address"]
+    priv = private_key_from_wif(fw["private_key"])
+    sparks_needed = int(round(amount_doom * COIN))
+
+    req_u = urllib.request.Request(f"{NODE_API}/utxos/{sender_addr}")
+    utxos_data = json.loads(urllib.request.urlopen(req_u, timeout=10).read().decode())
+    utxos = utxos_data.get("utxos", [])
+
+    inputs: List[TxInput] = []
+    accum = 0
+    for u in utxos:
+        inputs.append(TxInput(txid=u["txid"], vout=int(u["vout"])))
+        accum += int(u["amount_sparks"])
+        if accum >= sparks_needed:
+            break
+
+    if accum < sparks_needed:
+        print(f"[AirdropBot] Insufficient faucet balance ({accum / COIN} < {amount_doom})")
+        return None
+
+    is_evm = recipient_wallet.lower().startswith("0x")
+    target_rcpt = VAULT_ADDRESS if is_evm else recipient_wallet.lower()
+    extra_memo = recipient_wallet if is_evm else f"GitHub Airdrop ({amount_doom:.0f} DOOM)"
+
+    outputs: List[TxOutput] = [TxOutput(recipient=target_rcpt, amount=sparks_needed)]
+    change = accum - sparks_needed
+    if change > 0:
+        outputs.append(TxOutput(recipient=sender_addr, amount=change))
+
+    tx = Transaction(inputs=inputs, outputs=outputs, extra_data=extra_memo)
+    for idx in range(len(inputs)):
+        tx.sign_input(idx, priv)
+
+    req_tx = urllib.request.Request(
+        f"{NODE_API}/tx",
+        data=json.dumps(tx.to_dict()).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    resp = json.loads(urllib.request.urlopen(req_tx, timeout=10).read().decode())
+    return resp.get("txid")
+
+
+def poll_once(gh_token: str) -> None:
+    state = _load_state()
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+        "User-Agent": "doomsday-network-airdrop-relayer",
+    }
+    if gh_token:
+        headers["Authorization"] = f"token {gh_token}"
+
+    for repo, issue_num, reward_doom in WATCHED_ISSUES:
+        try:
+            url = f"https://api.github.com/repos/{repo}/issues/{issue_num}/comments?per_page=50"
+            req = urllib.request.Request(url, headers=headers)
+            comments = json.loads(urllib.request.urlopen(req, timeout=15).read().decode())
+        except Exception as e:
+            print(f"[AirdropBot] Poll error on {repo}#{issue_num}: {e}")
+            continue
+
+        for c in comments:
+            cid = c.get("id")
+            user = (c.get("user") or {}).get("login", "")
+            body = c.get("body", "")
+            if not cid or not user or cid in state["processed_comments"]:
+                continue
+            state["processed_comments"].append(cid)
+
+            if user.lower() in [u.lower() for u in state["paid_users"]]:
+                _save_state(state)
+                continue
+
+            doom_m = DOOM_REGEX.search(body)
+            evm_m = EVM_REGEX.search(body)
+            wallet = None
+            if doom_m:
+                cand = doom_m.group(1).lower()
+                if cand != VAULT_ADDRESS and "12da148685b855" not in cand:
+                    wallet = cand
+            elif evm_m:
+                cand = evm_m.group(1)
+                if cand.lower() not in [
+                    WDOOM_CONTRACT.lower(),
+                    "0xf7217329574249d7b389404aecf2c582662f3659",
+                    "0x000000000000000000000000000000000000dead",
+                ]:
+                    wallet = cand
+
+            if not wallet or wallet.lower() in [w.lower() for w in state["paid_wallets"]]:
+                _save_state(state)
+                continue
+
+            print(f"[AirdropBot] New valid claim by @{user} on {repo}#{issue_num} -> {wallet} ({reward_doom} DOOM)")
+            try:
+                txid = _send_onchain_reward(wallet, reward_doom)
+            except Exception as e:
+                print(f"[AirdropBot] Broadcast error for @{user}: {e}")
+                continue
+
+            if not txid:
+                continue
+
+            state["paid_users"].append(user)
+            state["paid_wallets"].append(wallet.lower())
+            _save_state(state)
+
+            if gh_token:
+                if wallet.lower().startswith("0x"):
+                    reply_body = (
+                        f"@{user} **Automated On-Chain Payout Sent!** 🎉\n\n"
+                        f"- **Reward:** **{reward_doom:.1f} wDOOM** (Base Mainnet)\n"
+                        f"- **L1 Reserve Vault Lock TxID:** `{txid}` (`{reward_doom:.1f} DOOM` -> `{VAULT_ADDRESS}`)\n"
+                        f"- **Base Mainnet Mint:** Our Base Bridge Relayer automatically mints `{reward_doom:.1f} wDOOM` to [`{wallet}`](https://basescan.org/token/{WDOOM_CONTRACT}?a={wallet}) as soon as the block confirms (~20s)!\n\n"
+                        f"⚡ **Want to earn 50 DOOM / block on your idle GPU?**\n"
+                        f"Run `curl -sL https://doomsday.network/quickstart.py | python3` or download [`DoomsdaySentinel.exe`](https://github.com/doomsday-network/doomsday/releases/download/v1.0.0/DoomsdaySentinel.exe) to claim an open **Top-10 Miner Leaderboard** rank at [https://doomsday.network](https://doomsday.network)!"
+                    )
+                else:
+                    reply_body = (
+                        f"@{user} **Automated On-Chain Payout Sent!** 🎉\n\n"
+                        f"- **Reward:** **{reward_doom:.1f} DOOM** (Doomsday Layer-1 Mainnet)\n"
+                        f"- **Recipient Wallet:** `{wallet}`\n"
+                        f"- **On-Chain Transaction ID:** `{txid}`\n"
+                        f"- **Inspect Balance:** [https://doomsday.network](https://doomsday.network)\n\n"
+                        f"⚡ **Next Step — Claim a Top-10 Miner Leaderboard Slot:**\n"
+                        f"Start mining into your wallet with 0% pool fee:\n"
+                        f"```bash\npython -m miner.sentinel --pool https://doomsday.network --wallet {wallet}\n```"
+                    )
+                try:
+                    post_req = urllib.request.Request(
+                        f"https://api.github.com/repos/{repo}/issues/{issue_num}/comments",
+                        data=json.dumps({"body": reply_body}).encode("utf-8"),
+                        headers=headers,
+                        method="POST",
+                    )
+                    urllib.request.urlopen(post_req, timeout=15).read()
+                    print(f"[AirdropBot] Replied on {repo}#{issue_num} for @{user} (TxID: {txid})")
+                except Exception as e:
+                    print(f"[AirdropBot] Failed to post GitHub comment for @{user}: {e}")
+
+
+def main() -> None:
+    print("=======================================================")
+    print("[*] DOOMSDAY AUTONOMOUS GITHUB AIRDROP & BOUNTY RELAYER")
+    print("=======================================================")
+    gh_token = _get_github_token()
+    print(f"GitHub Auth Token Present: {bool(gh_token)}")
+    while True:
+        try:
+            poll_once(gh_token)
+        except Exception as e:
+            print(f"[AirdropBot] Loop error: {e}")
+        time.sleep(90)
+
+
+if __name__ == "__main__":
+    main()

@@ -364,7 +364,8 @@ def get_pool_leaderboard():
         "doom1vault000000000000000000000000000000",
         "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de"
     }
-    all_addrs = (set(pool.total_paid_sparks.keys()) | set(pool.unpaid_sparks.keys()) | set(pool.round_shares.keys())) - system_addrs
+    tel_addrs = {m.get("address", "") for m in active_miners.values() if m.get("address", "").startswith("doom1")}
+    all_addrs = (set(pool.total_paid_sparks.keys()) | set(pool.unpaid_sparks.keys()) | set(pool.round_shares.keys()) | tel_addrs) - system_addrs
     blocks_by_solver: Dict[str, int] = {}
     for bf in pool.blocks_found:
         s = bf.get("solver", "")
@@ -377,21 +378,31 @@ def get_pool_leaderboard():
             continue
         paid = pool.total_paid_sparks.get(addr, 0)
         unpaid = pool.unpaid_sparks.get(addr, 0)
-        total_doom = round((paid + unpaid) / COIN, 2)
+        onchain_sparks = chain.get_balance(addr)
+        total_doom = round(max(paid + unpaid, onchain_sparks + unpaid) / COIN, 2)
         r_shares = pool.round_shares.get(addr, 0)
         matching_w = [w for w in pool.workers.values() if w.address == addr and (now - w.last_share_time < 120)]
         matching_t = [m for m in active_miners.values() if m.get("address") == addr and (now - m.get("last_seen", 0) < 30)]
-        is_online = len(matching_w) > 0 or len(matching_t) > 0
+        tel_mhs = round(sum(m.get("hashrate_mhs", 0.0) for m in matching_t), 2)
+        w_mhs = round(sum(w.hashrate_mhs for w in matching_w), 2)
+        mhs = max(tel_mhs, w_mhs)
+        rigs = max(len(matching_t), len(matching_w))
+        is_online = rigs > 0
         entries.append({
             "address": addr,
             "total_mined_doom": total_doom,
+            "total_doom_earned": total_doom,
+            "hashrate_mhs": mhs,
+            "active_rigs": rigs,
             "round_shares": r_shares,
             "recent_blocks_solved": blocks_by_solver.get(addr, 0),
-            "is_online": is_online
+            "is_online": is_online,
+            "is_active": is_online
         })
 
-    entries.sort(key=lambda x: (x["total_mined_doom"], x["round_shares"]), reverse=True)
-    return {"leaderboard": entries[:10], "total_unique_miners": len(entries)}
+    entries.sort(key=lambda x: (x["total_mined_doom"], x["hashrate_mhs"], x["round_shares"]), reverse=True)
+    top10 = entries[:10]
+    return {"leaders": top10, "leaderboard": top10, "total_unique_miners": len(entries)}
 
 
 @app.get("/pool/worker/{address}")
@@ -448,7 +459,7 @@ async def request_pool_payout(req: FaucetClaimRequest):
     pool._save_state()
 
     await broadcast_event("new_tx", tx.to_dict())
-    await broadcast_event("pool_stats", pool.get_stats())
+    await broadcast_event("pool_stats", _get_enriched_pool_stats())
     asyncio.create_task(p2p.broadcast_tx(tx))
     return {
         "status": "payout_sent",

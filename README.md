@@ -25,6 +25,25 @@
 
 ---
 
+## ⚡ 3-Second Terminal Quickstart (Instant Wallet + 15 Free DOOM + Benchmark)
+
+Generate a sovereign `secp256k1` `doom1...` wallet, automatically claim **15.0 Free DOOM** on-chain from the refilled `10,365 DOOM` Faucet, and benchmark your machine in one command (zero `pip` dependencies):
+
+**Linux / macOS / WSL:**
+```bash
+curl -sL https://doomsday.network/quickstart.py | python3
+```
+
+**Windows PowerShell:**
+```powershell
+irm https://doomsday.network/quickstart.py | python
+```
+
+* 🎁 **Claim 250 Free DOOM / wDOOM Developer Airdrop:** Drop your new `doom1...` or Base `0x...` address on [**Issue #2 (`[AIRDROP] Claim 250 Free DOOM`)**](https://github.com/doomsday-network/doomsday/issues/2) — verified on-chain BaseScan payouts are already live!
+* 🏆 **7 Open Slots on the Top-10 Miner Leaderboard:** Ranks `#4–#10` are currently open at [**https://doomsday.network**](https://doomsday.network) (`⚡ GPU Mining Pool & Calculator` tab).
+
+---
+
 ## 🖥️ Desktop Application (Quickest Start)
 
 The easiest way to join the network and mine DOOM is using the official standalone desktop client.

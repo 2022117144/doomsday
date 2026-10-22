@@ -111,7 +111,7 @@ def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[
     priv = private_key_from_wif(fw["private_key"])
     sparks_needed = int(round(amount_doom * COIN))
 
-    req_u = urllib.request.Request(f"{NODE_API}/utxos/{sender_addr}")
+    req_u = urllib.request.Request(f"{NODE_API}/wallet/{sender_addr}/utxos")
     utxos_data = json.loads(urllib.request.urlopen(req_u, timeout=10).read().decode())
     utxos = utxos_data.get("utxos", [])
 
@@ -141,8 +141,8 @@ def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[
         tx.sign_input(idx, priv)
 
     req_tx = urllib.request.Request(
-        f"{NODE_API}/tx",
-        data=json.dumps(tx.to_dict()).encode("utf-8"),
+        f"{NODE_API}/tx/broadcast",
+        data=json.dumps({"transaction": tx.to_dict()}).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
     )

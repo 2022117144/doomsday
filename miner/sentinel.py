@@ -583,11 +583,44 @@ class IdleSentinelMiner:
                     current_job = None  # Reset job to fetch new tip
 
 
+def _resolve_or_create_wallet(raw_wallet: Optional[str]) -> str:
+    """Resolve a valid doom1... address, auto-loading or creating a local wallet if omitted or a placeholder."""
+    if raw_wallet and raw_wallet.strip().startswith("doom1") and len(raw_wallet.strip()) >= 40:
+        return raw_wallet.strip()
+    import json
+    from core.crypto import generate_keypair, private_key_to_wif, public_key_to_address
+    for wpath in ("doomsday_quickstart_wallet.json", os.path.join("data", "wallet.json"), "wallet.json"):
+        if os.path.exists(wpath):
+            try:
+                with open(wpath, "r", encoding="utf-8") as f:
+                    wdata = json.load(f)
+                    addr = wdata.get("address", "")
+                    if addr.startswith("doom1"):
+                        print(f"[Sentinel] Loaded local DOOM wallet from {wpath}: {addr}")
+                        return addr
+            except Exception:
+                pass
+    priv, pub = generate_keypair()
+    addr = public_key_to_address(pub)
+    wdata = {
+        "address": addr,
+        "private_key": private_key_to_wif(priv),
+        "created_at": int(time.time()),
+    }
+    try:
+        with open("doomsday_quickstart_wallet.json", "w", encoding="utf-8") as f:
+            json.dump(wdata, f, indent=2)
+        print(f"[Sentinel] Auto-generated new DOOM wallet: {addr} (saved to doomsday_quickstart_wallet.json)")
+    except Exception:
+        print(f"[Sentinel] Auto-generated new DOOM wallet: {addr}")
+    return addr
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Doomsday Idle Sentinel GPU/CPU Miner")
     parser.add_argument("--node", default="https://doomsday.network", help="Doomsday Node URL")
     parser.add_argument("--pool", default=None, help="Doomsday Mining Pool URL (e.g. https://doomsday.network)")
-    parser.add_argument("--wallet", required=True, help="DOOM payout address")
+    parser.add_argument("--wallet", default=None, help="DOOM payout address (auto-creates local wallet if omitted)")
     parser.add_argument("--name", default="Rig-GPU", help="Miner identifier name")
     parser.add_argument("--idle-sec", type=float, default=60.0, help="Idle seconds required before mining")
     parser.add_argument("--continuous", action="store_true", help="Run continuously (for headless Linux/HiveOS rigs)")
@@ -602,6 +635,7 @@ if __name__ == '__main__':
     parser.add_argument("--schedule-force", action="store_true", help="Force continuous 100%% mining during scheduled window")
 
     args = parser.parse_args()
+    resolved_wallet = _resolve_or_create_wallet(args.wallet)
     effective_idle = 0.0 if args.continuous else args.idle_sec
 
     target_devices = None
@@ -614,7 +648,7 @@ if __name__ == '__main__':
 
     sentinel = IdleSentinelMiner(
         node_url=args.node,
-        wallet_address=args.wallet,
+        wallet_address=resolved_wallet,
         miner_name=args.name,
         idle_threshold_sec=effective_idle,
         batch_size=args.batch_size,

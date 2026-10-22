@@ -1126,7 +1126,7 @@ if os.path.exists(web_dir):
 
     @app.api_route("/quickstart.py", methods=["GET", "HEAD"])
     def get_quickstart_script():
-        qs_path = os.path.join(os.path.dirname(WEB_DIR), "quickstart.py")
+        qs_path = os.path.join(os.path.dirname(web_dir), "quickstart.py")
         if os.path.exists(qs_path):
             return FileResponse(qs_path, media_type="text/x-python")
         raise HTTPException(status_code=404, detail="quickstart.py not found")

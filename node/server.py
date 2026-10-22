@@ -335,18 +335,76 @@ async def submit_pool_share(req: PoolSubmitRequest):
         # Automatically pay out round contributors with >= 1.0 DOOM unpaid
         await process_auto_pool_payouts()
 
-    await broadcast_event("pool_stats", pool.get_stats())
+    await broadcast_event("pool_stats", _get_enriched_pool_stats())
     return res
+
+
+def _get_enriched_pool_stats() -> Dict[str, Any]:
+    stats = pool.get_stats()
+    now = time.time()
+    active_tel = [m for m in active_miners.values() if now - m.get("last_seen", 0) < 30]
+    tel_mhs = round(sum(m.get("hashrate_mhs", 0.0) for m in active_tel), 2)
+    if tel_mhs > stats.get("pool_hashrate_mhs", 0.0):
+        stats["pool_hashrate_mhs"] = tel_mhs
+    if len(active_tel) > stats.get("active_miners", 0):
+        stats["active_miners"] = len(active_tel)
+    return stats
 
 
 @app.get("/pool/stats")
 def get_pool_stats():
-    return pool.get_stats()
+    return _get_enriched_pool_stats()
+
+
+@app.get("/pool/leaderboard")
+def get_pool_leaderboard():
+    now = time.time()
+    system_addrs = {
+        pool.pool_address,
+        "doom1vault000000000000000000000000000000",
+        "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de"
+    }
+    all_addrs = (set(pool.total_paid_sparks.keys()) | set(pool.unpaid_sparks.keys()) | set(pool.round_shares.keys())) - system_addrs
+    blocks_by_solver: Dict[str, int] = {}
+    for bf in pool.blocks_found:
+        s = bf.get("solver", "")
+        if s:
+            blocks_by_solver[s] = blocks_by_solver.get(s, 0) + 1
+
+    entries = []
+    for addr in all_addrs:
+        if not addr or not addr.startswith("doom1"):
+            continue
+        paid = pool.total_paid_sparks.get(addr, 0)
+        unpaid = pool.unpaid_sparks.get(addr, 0)
+        total_doom = round((paid + unpaid) / COIN, 2)
+        r_shares = pool.round_shares.get(addr, 0)
+        matching_w = [w for w in pool.workers.values() if w.address == addr and (now - w.last_share_time < 120)]
+        matching_t = [m for m in active_miners.values() if m.get("address") == addr and (now - m.get("last_seen", 0) < 30)]
+        is_online = len(matching_w) > 0 or len(matching_t) > 0
+        entries.append({
+            "address": addr,
+            "total_mined_doom": total_doom,
+            "round_shares": r_shares,
+            "recent_blocks_solved": blocks_by_solver.get(addr, 0),
+            "is_online": is_online
+        })
+
+    entries.sort(key=lambda x: (x["total_mined_doom"], x["round_shares"]), reverse=True)
+    return {"leaderboard": entries[:10], "total_unique_miners": len(entries)}
 
 
 @app.get("/pool/worker/{address}")
 def get_pool_worker(address: str):
-    return pool.get_worker_stats(address)
+    wstats = pool.get_worker_stats(address)
+    now = time.time()
+    tel = [m for m in active_miners.values() if m.get("address") == address and (now - m.get("last_seen", 0) < 30)]
+    tel_mhs = round(sum(m.get("hashrate_mhs", 0.0) for m in tel), 2)
+    if tel_mhs > wstats.get("hashrate_mhs", 0.0):
+        wstats["hashrate_mhs"] = tel_mhs
+        wstats["is_active"] = True
+        wstats["active_rigs"] = max(wstats.get("active_rigs", 0), len(tel))
+    return wstats
 
 
 @app.post("/pool/payout")

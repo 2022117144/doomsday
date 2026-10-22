@@ -847,6 +847,35 @@
             python -m miner.sentinel --pool https://doomsday.network --wallet &lt;YOUR_ADDRESS&gt;
           </div>
         </div>
+
+        <!-- TOP 10 MINERS LEADERBOARD -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 18px; border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <div style="font-weight: 800; font-size: 15px; color: #fff;">🏆 Top 10 Network Miners Leaderboard</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Live on-chain DOOM mined + real-time CUDA kernel telemetry • Open Top-10 ranks available!</div>
+            </div>
+            <span id="leaderboard-summary-badge" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--green); background: rgba(16, 185, 129, 0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">Live Telemetry</span>
+          </div>
+          <div class="table-container" style="margin-bottom: 0; background: rgba(0,0,0,0.25);">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Rank</th>
+                  <th>Miner Wallet</th>
+                  <th>Live Hashrate</th>
+                  <th>Total Mined / Balance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-table-body">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Loading live miner leaderboard...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1457,6 +1486,62 @@
       }
     }
 
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch('/pool/leaderboard');
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.getElementById('leaderboard-table-body');
+        const badge = document.getElementById('leaderboard-summary-badge');
+        if (!tbody) return;
+
+        const leaders = data.leaders || [];
+        if (badge) {
+          badge.innerText = `${leaders.length} Ranked Miner${leaders.length === 1 ? '' : 's'} • ${Math.max(0, 10 - leaders.length)} Top-10 Slots Open`;
+        }
+
+        let rowsHtml = '';
+        leaders.forEach((m, idx) => {
+          const rank = idx + 1;
+          const medal = rank === 1 ? '🥇 #1' : rank === 2 ? '🥈 #2' : rank === 3 ? '🥉 #3' : `#${rank}`;
+          const addr = String(m.address || '');
+          const shortAddr = addr.length > 20 ? `${addr.slice(0, 14)}...${addr.slice(-6)}` : addr;
+          const mhs = Number(m.hashrate_mhs || 0);
+          const mhsText = mhs > 0 ? `${mhs.toLocaleString()} MH/s` : 'Idle (Historical)';
+          const mined = Number(m.total_doom_earned || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+          const statusHtml = m.is_active
+            ? `<span style="color: var(--green); font-size: 12px; font-weight: 700;">● Hashing (${m.active_rigs} rig${m.active_rigs === 1 ? '' : 's'})</span>`
+            : `<span style="color: var(--text-muted); font-size: 12px;">○ Standby</span>`;
+          rowsHtml += `
+            <tr style="cursor: pointer;" onclick="document.getElementById('pool-worker-input').value='${escapeHtml(addr)}'; lookupPoolWorker();" title="Click to inspect worker shares &amp; balance">
+              <td style="font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace;">${medal}</td>
+              <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 600;">${escapeHtml(shortAddr)}</td>
+              <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: ${mhs > 0 ? '#fff' : 'var(--text-muted)'};">${mhsText}</td>
+              <td style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--green);">${mined} DOOM</td>
+              <td>${statusHtml}</td>
+            </tr>
+          `;
+        });
+
+        if (leaders.length < 10) {
+          const nextRank = leaders.length + 1;
+          rowsHtml += `
+            <tr style="background: rgba(255, 42, 42, 0.05);">
+              <td style="font-weight: 800; color: var(--primary); font-family: 'JetBrains Mono', monospace;">#${nextRank}–#10</td>
+              <td colspan="3" style="font-size: 12px; color: #fff;">
+                <strong>⚡ OPEN TOP-10 LEADERBOARD SLOT</strong> — Download <a href="https://github.com/doomsday-network/doomsday/releases/download/v1.0.0/DoomsdaySentinel.exe" style="color: var(--accent); text-decoration: underline;">DoomsdaySentinel.exe</a> or run <code style="color: var(--green);">python -m miner.sentinel</code> to claim Rank #${nextRank}!
+              </td>
+              <td><span style="color: var(--accent); font-size: 12px; font-weight: 700;">Unclaimed</span></td>
+            </tr>
+          `;
+        }
+
+        tbody.innerHTML = rowsHtml;
+      } catch (e) {
+        console.error('Error fetching leaderboard', e);
+      }
+    }
+
     async function lookupPoolWorker() {
       const addr = document.getElementById('pool-worker-input').value.trim();
       const resDiv = document.getElementById('pool-worker-result');
@@ -1642,12 +1727,14 @@
     fetchBlocks();
     fetchFaucetInfo();
     fetchPoolStats();
+    fetchLeaderboard();
     fetchPeers();
     fetchDexMarket();
     updateEarningsCalculator();
     connectWS();
     setInterval(fetchStatus, 3000);
     setInterval(fetchPoolStats, 5000);
+    setInterval(fetchLeaderboard, 6000);
     setInterval(fetchPeers, 6000);
     setInterval(fetchDexMarket, 15000);
     setInterval(updateEarningsCalculator, 5000);

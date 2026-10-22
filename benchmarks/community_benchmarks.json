@@ -52,5 +52,16 @@
     "base_evm_address": "0xdF4Ff9D2f45f99f11A90b16F277D4B7EddDB72A5",
     "l1_txid": "797559bca0ffcd1481962807eee83aefdc23af4625bfb2ca393847443eeaf693",
     "verified_onchain": true
+  },
+  {
+    "github_user": "RAMGOX",
+    "device": "AMD Ryzen 5 3600 + NVIDIA GeForce GTX 1660 (CPython 3.11.9 Windows 10)",
+    "mode": "CPU + Live Pool Miner (Rank #4)",
+    "hashrate": "270.0 kH/s (12-Thread Pool Miner) / 23.0 kH/s (1-Thread Reference)",
+    "doom_address": "doom172442b135f8ed11188c433cd6cf96b26fb9a3e221619b914",
+    "base_evm_address": "0x02c1F87F514493F359Afc0B3ff6b587434770361",
+    "l1_txid": "2d48ad63d78809ad4173dab3104ca5dd939a4f47dc82dbff0d2f4287005fffcd",
+    "l1_vault_txid": "9a9a018a8c0070c5d2a1e938e223714a4180cc315b4f59569aa6688f6ea44a54",
+    "verified_onchain": true
   }
 ]

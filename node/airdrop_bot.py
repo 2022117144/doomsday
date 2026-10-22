@@ -208,12 +208,12 @@ def _has_verified_pool_activity(body: str) -> bool:
 
 
 def _extract_user_wallet(body: str) -> Optional[str]:
-    for cand in DOOM_REGEX.findall(body):
-        if cand.lower() not in IGNORED_DOOM_ADDRESSES:
-            return cand.lower()
     for cand in EVM_REGEX.findall(body):
         if cand.lower() not in IGNORED_EVM_ADDRESSES:
             return cand
+    for cand in DOOM_REGEX.findall(body):
+        if cand.lower() not in IGNORED_DOOM_ADDRESSES:
+            return cand.lower()
     return None
 
 

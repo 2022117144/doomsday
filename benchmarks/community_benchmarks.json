@@ -70,5 +70,14 @@
     "mode": "CPU (Single-Thread Offline Reference)",
     "hashrate": "12.3 kH/s",
     "verified_onchain": true
+  },
+  {
+    "github_user": "Anthgg",
+    "device": "AMD64 Family 23 Model 104 Stepping 1 (CPython 3.14.5 Windows 11 AMD64)",
+    "mode": "CPU (Single-Thread Offline Reference)",
+    "hashrate": "23.1 kH/s",
+    "base_evm_address": "0xb0129B682fa218Ab0Cb7E7846EFb3805eE97Ea2b",
+    "l1_vault_txid": "a6ce091b155f6d7904ff6f30a1a3943aad89ce18e6c2cbc4cd7bb4fe64204a1a",
+    "verified_onchain": true
   }
 ]

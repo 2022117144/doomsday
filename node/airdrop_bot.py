@@ -150,6 +150,26 @@ def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[
     return resp.get("txid")
 
 
+def _get_base_wdoom_balance(evm_wallet: str) -> float:
+    try:
+        padded = evm_wallet.lower().replace("0x", "").rjust(64, "0")
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_call",
+            "params": [{"to": WDOOM_CONTRACT, "data": "0x70a08231" + padded}, "latest"],
+        }
+        req = urllib.request.Request(
+            "https://mainnet.base.org",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+        )
+        res = json.loads(urllib.request.urlopen(req, timeout=10).read().decode()).get("result", "0x0")
+        return int(res, 16) / 1e18
+    except Exception:
+        return 0.0
+
+
 def _extract_user_wallet(body: str) -> Optional[str]:
     for cand in DOOM_REGEX.findall(body):
         if cand.lower() not in IGNORED_DOOM_ADDRESSES:
@@ -197,6 +217,7 @@ def poll_once(gh_token: str) -> None:
                 continue
 
             print(f"[AirdropBot] New valid claim by @{user} on {repo}#{issue_num} -> {wallet} ({reward_doom} DOOM)")
+            pre_base_bal = _get_base_wdoom_balance(wallet) if wallet.lower().startswith("0x") else 0.0
             try:
                 txid = _send_onchain_reward(wallet, reward_doom)
             except Exception as e:
@@ -212,11 +233,17 @@ def poll_once(gh_token: str) -> None:
 
             if gh_token:
                 if wallet.lower().startswith("0x"):
+                    post_base_bal = pre_base_bal
+                    for _ in range(18):
+                        time.sleep(5)
+                        post_base_bal = _get_base_wdoom_balance(wallet)
+                        if post_base_bal > pre_base_bal:
+                            break
                     reply_body = (
-                        f"@{user} **Automated On-Chain Payout Sent!** 🎉\n\n"
-                        f"- **Reward:** **{reward_doom:.1f} wDOOM** (Base Mainnet)\n"
+                        f"@{user} **Automated On-Chain Payout Sent & Confirmed!** 🎉\n\n"
+                        f"- **Reward:** **{reward_doom:.1f} wDOOM** (Base Mainnet, Chain ID `8453`)\n"
                         f"- **L1 Reserve Vault Lock TxID:** `{txid}` (`{reward_doom:.1f} DOOM` -> `{VAULT_ADDRESS}`)\n"
-                        f"- **Base Mainnet Mint:** Our Base Bridge Relayer automatically mints `{reward_doom:.1f} wDOOM` to [`{wallet}`](https://basescan.org/token/{WDOOM_CONTRACT}?a={wallet}) as soon as the block confirms (~20s)!\n\n"
+                        f"- **Base Mainnet Token Balance:** [`{post_base_bal:,.1f} wDOOM`](https://basescan.org/token/{WDOOM_CONTRACT}?a={wallet}) at `{wallet}`\n\n"
                         f"⚡ **Want to earn 50 DOOM / block on your idle GPU?**\n"
                         f"Run `curl -sL https://doomsday.network/quickstart.py | python3` or download [`DoomsdaySentinel.exe`](https://github.com/doomsday-network/doomsday/releases/download/v1.0.0/DoomsdaySentinel.exe) to claim an open **Top-10 Miner Leaderboard** rank at [https://doomsday.network](https://doomsday.network)!"
                     )

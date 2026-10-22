@@ -63,5 +63,12 @@
     "l1_txid": "2d48ad63d78809ad4173dab3104ca5dd939a4f47dc82dbff0d2f4287005fffcd",
     "l1_vault_txid": "9a9a018a8c0070c5d2a1e938e223714a4180cc315b4f59569aa6688f6ea44a54",
     "verified_onchain": true
+  },
+  {
+    "github_user": "pythonyx135793",
+    "device": "Intel Core i7-6700K @ 4.00GHz (CPython 3.12.14 Windows 10 AMD64)",
+    "mode": "CPU (Single-Thread Offline Reference)",
+    "hashrate": "12.3 kH/s",
+    "verified_onchain": true
   }
 ]

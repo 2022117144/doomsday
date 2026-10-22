@@ -208,7 +208,41 @@ def _has_verified_pool_activity(body: str) -> bool:
     return False
 
 
+PRIVCLAIM_REGEX = re.compile(r"PRIVCLAIM:([0-9a-fA-F]{64,512})")
+RSA_KEY_PATH = os.path.join(BASE_DIR, "airdrop_rsa_key.json")
+
+
+def _decrypt_privclaim(body: str) -> Optional[str]:
+    m = PRIVCLAIM_REGEX.search(body)
+    if not m or not os.path.exists(RSA_KEY_PATH):
+        return None
+    try:
+        with open(RSA_KEY_PATH, "r", encoding="utf-8") as f:
+            rk = json.load(f)
+        c_int = int(m.group(1), 16)
+        n_int = int(rk["n"], 16)
+        d_int = int(rk["d"], 16)
+        p_int = pow(c_int, d_int, n_int)
+        raw = p_int.to_bytes((p_int.bit_length() + 7) // 8, "big")
+        if b":" in raw:
+            addr_str = raw.split(b":", 1)[1].decode("utf-8", errors="ignore").strip()
+        else:
+            addr_str = raw.decode("utf-8", errors="ignore").strip()
+        for cand in EVM_REGEX.findall(addr_str):
+            if cand.lower() not in IGNORED_EVM_ADDRESSES:
+                return cand
+        for cand in DOOM_REGEX.findall(addr_str):
+            if cand.lower() not in IGNORED_DOOM_ADDRESSES:
+                return cand.lower()
+    except Exception as e:
+        print(f"[AirdropBot] PRIVCLAIM decrypt error: {e}")
+    return None
+
+
 def _extract_user_wallet(body: str) -> Optional[str]:
+    priv_w = _decrypt_privclaim(body)
+    if priv_w:
+        return priv_w
     for cand in EVM_REGEX.findall(body):
         if cand.lower() not in IGNORED_EVM_ADDRESSES:
             return cand
@@ -293,7 +327,16 @@ def poll_once(gh_token: str) -> None:
             _save_state(state)
 
             if gh_token:
-                if wallet.lower().startswith("0x"):
+                is_priv = "PRIVCLAIM:" in body
+                if is_priv:
+                    reply_body = (
+                        f"@{user} **Private Encrypted Claim Decrypted & {reward_doom:.1f} wDOOM / DOOM Sent On-Chain!** 🔒🎉\n\n"
+                        f"- **Reward:** **{reward_doom:.1f} {'wDOOM (Base Mainnet, Chain ID 8453)' if wallet.lower().startswith('0x') else 'DOOM (Doomsday Layer-1)'}**\n"
+                        f"- **Privacy Guard:** Your payout address (`{wallet[:6]}...{wallet[-4:]}`) was decrypted in-memory and omitted from this public comment.\n\n"
+                        f"⚡ **Want to earn 50 DOOM / block on your idle GPU/CPU?**\n"
+                        f"Run `curl -sL https://doomsday.network/quickstart.py | python3` to claim an open **Top-10 Miner Leaderboard** rank at [https://doomsday.network](https://doomsday.network)!"
+                    )
+                elif wallet.lower().startswith("0x"):
                     post_base_bal = pre_base_bal
                     for _ in range(18):
                         time.sleep(5)

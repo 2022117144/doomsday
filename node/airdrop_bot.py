@@ -32,6 +32,7 @@ WATCHED_ISSUES = [
     ("doomsday-network/doomsday", 4, 500.0),
     ("doomsday-network/doomsday", 7, 2500.0),
     ("doomsday-network/doomsday", 8, 500.0),
+    ("doomsday-network/doomsday", 9, 1000.0),
     ("doomsday-network/bounty-guard", 1, 500.0),
     ("doomsday-network/bounty-guard", 4, 2500.0),
 ]
@@ -201,6 +202,18 @@ def _has_starred_repo(user: str, headers: Dict[str, str]) -> bool:
         return False
 
 
+def _has_forked_repo(user: str, headers: Dict[str, str]) -> bool:
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/doomsday-network/doomsday/forks?per_page=100",
+            headers=headers,
+        )
+        forks = json.loads(urllib.request.urlopen(req, timeout=10).read().decode())
+        return any(((f.get("owner") or {}).get("login") or "").lower() == user.lower() for f in forks)
+    except Exception:
+        return False
+
+
 def _has_verified_pool_activity(body: str) -> bool:
     for cand in DOOM_REGEX.findall(body):
         addr = cand.lower()
@@ -210,10 +223,10 @@ def _has_verified_pool_activity(body: str) -> bool:
             req = urllib.request.Request(f"{NODE_API}/pool/worker/{addr}")
             w = json.loads(urllib.request.urlopen(req, timeout=10).read().decode())
             if (
-                w.get("round_shares", 0) >= 10
-                or w.get("unpaid_doom", 0.0) >= 0.25
+                w.get("round_shares", 0) >= 1
+                or w.get("unpaid_doom", 0.0) > 0.0
                 or w.get("total_paid_doom", 0.0) > 0.0
-                or w.get("hashrate_mhs", 0.0) >= 1.0
+                or w.get("hashrate_mhs", 0.0) > 0.0
             ):
                 return True
         except Exception:
@@ -310,6 +323,14 @@ def poll_once(gh_token: str) -> None:
             if repo == "doomsday-network/doomsday" and issue_num == 8:
                 if not _has_starred_repo(user, headers):
                     print(f"[AirdropBot] Waiting for @{user} to star doomsday-network/doomsday before paying #8")
+                    if cid in state["processed_comments"]:
+                        state["processed_comments"].remove(cid)
+                    _save_state(state)
+                    continue
+
+            if repo == "doomsday-network/doomsday" and issue_num == 9:
+                if not (_has_starred_repo(user, headers) and _has_forked_repo(user, headers) and _has_verified_pool_activity(body)):
+                    print(f"[AirdropBot] Waiting for @{user} to star+fork+mine pool share before paying #9")
                     if cid in state["processed_comments"]:
                         state["processed_comments"].remove(cid)
                     _save_state(state)

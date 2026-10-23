@@ -373,10 +373,13 @@ class EscrowManager:
         reserve_bal = self.chain.get_balance(ESCROW_RESERVE_ADDRESS) / COIN
         locked_sum = sum(float(e.get("amount_doom", 0.0)) for e in self.open_escrows if e.get("status") == "OPEN")
         settled_sum = sum(float(s.get("amount_doom", 0.0)) for s in self.settled_escrows)
+        utxos = self.chain.get_address_utxos(ESCROW_RESERVE_ADDRESS)[:10]
         return {
             "protocol": "Doomsday Proof-of-Escrow v1",
             "escrow_vault_address": ESCROW_RESERVE_ADDRESS,
             "escrow_vault_reserve_doom": round(reserve_bal, 2),
+            "vault_utxo_verified": len(utxos) > 0 and reserve_bal > 0,
+            "escrow_vault_utxo_proofs": utxos,
             "wdoom_base_contract": WDOOM_CONTRACT,
             "uniswap_v3_pool": UNISWAP_POOL,
             "total_open_bounties": len([e for e in self.open_escrows if e.get("status") == "OPEN"]),

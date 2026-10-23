@@ -57,7 +57,7 @@ IGNORED_EVM_ADDRESSES = {
 }
 
 DOOM_PAY_REGEX = re.compile(
-    r"/(?:doom-pay|doom-release)\s+@?([A-Za-z0-9_.-]+)(?:\s+(\d+(?:\.\d+)?))?",
+    r"\A\s*/(?:doom-pay|doom-release)\s+@?([A-Za-z0-9_.-]+)(?:\s+(\d+(?:\.\d+)?))?",
     re.IGNORECASE,
 )
 ESCROWS_PATH = os.path.join(BASE_DIR, "data", "escrows.json")

@@ -16,6 +16,8 @@ Doomsday Proof-of-Escrow natively equips autonomous AI coding agents with crypto
 | **Microsoft AutoGen** | [`integrations/autogen`](autogen/) | Conversable multi-agent systems & automated group chats |
 | **OpenAI Agents SDK** | [`integrations/openai_agents`](openai_agents/) | Python agents, function tools, and handoffs |
 | **OpenAI Function-Calling & Smolagents** | [`integrations/openai-agents`](openai-agents/) | OpenAI Function-Calling, Responses API, Smolagents & MCP Server |
+| **Microsoft Semantic Kernel** | [`integrations/semantic_kernel`](semantic_kernel/) | Kernel plugin with three read-only escrow functions |
+| **Haystack** | [`integrations/haystack`](haystack/) | Typed Haystack `Tool` objects for escrow and miner checks |
 | **Claude-Flow & Cursor MCP** | [`integrations/claude-flow-mcp`](claude-flow-mcp/) | Zero-dependency stdio MCP server & SKILL.md for Claude Code / Cursor |
 | **Agent SKILL.md** | [`integrations/skills`](skills/) | LLM-ready markdown specification and tool contracts |
 

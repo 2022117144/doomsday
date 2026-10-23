@@ -236,6 +236,60 @@ class TestDoomsdayMCPProtocol(unittest.TestCase):
         self.assertIn("claim_faucet", tool_names)
         self.assertIn("verify_miner_worker", tool_names)
         self.assertIn("format_escrow_badge", tool_names)
+        self.assertIn("generate_doom_wallet", tool_names)
+        self.assertIn("send_doom_l1", tool_names)
+        self.assertIn("create_l1_invoice", tool_names)
+        self.assertIn("verify_l1_payment", tool_names)
+
+    def test_create_l1_invoice_and_verify_memo(self):
+        inv = doomsday_mcp.create_l1_invoice(
+            "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
+            25.0,
+            "Code audit for PR #42"
+        )
+        self.assertEqual(inv["status"], "invoice_created")
+        self.assertTrue(inv["invoice_id"].startswith("doom-inv-"))
+        self.assertEqual(inv["amount_doom"], 25.0)
+        self.assertEqual(inv["miner_fee_doom"], 0.001)
+        self.assertEqual(inv["total_required_doom"], 25.001)
+
+        with patch("integrations.mcp.doomsday_mcp._get_json") as mock_get:
+            def side_effect(path):
+                if "/utxos" in path:
+                    return {"utxos": []}
+                if "/blocks" in path:
+                    return [{
+                        "height": 12900,
+                        "hash": "00000000abc",
+                        "transactions": [{
+                            "txid": "a" * 64,
+                            "extra_data": inv["invoice_id"],
+                            "outputs": [{
+                                "recipient": "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
+                                "amount": 25 * 100_000_000,
+                            }]
+                        }]
+                    }]
+                return {}
+            mock_get.side_effect = side_effect
+
+            v_ok = doomsday_mcp.verify_l1_payment(
+                "a" * 64,
+                "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
+                25.0,
+                inv["invoice_id"]
+            )
+            self.assertTrue(v_ok["verified"])
+            self.assertEqual(v_ok["memo"], inv["invoice_id"])
+
+            v_wrong_memo = doomsday_mcp.verify_l1_payment(
+                "a" * 64,
+                "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
+                25.0,
+                "doom-inv-wrongmemo123"
+            )
+            self.assertFalse(v_wrong_memo["verified"])
+            self.assertIn("does not match expected invoice memo", v_wrong_memo["reason"])
 
     @patch("integrations.mcp.doomsday_mcp.get_wallet_balance")
     def test_tools_call_get_wallet_balance(self, mock_bal):

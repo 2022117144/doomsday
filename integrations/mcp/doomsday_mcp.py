@@ -348,17 +348,56 @@ def send_doom_l1(
     }
 
 
+def create_l1_invoice(
+    recipient_address: str,
+    amount_doom: float,
+    description: str = ""
+) -> Dict[str, Any]:
+    """
+    Create a non-custodial Layer-1 DOOM payment invoice for agent-to-agent commerce.
+    Generates a unique on-chain extra_data memo tag (doom-inv-<12hex>) that the buyer
+    embeds in their signed secp256k1 UTXO transaction and the seller verifies on-chain.
+    """
+    import hashlib
+    import time
+
+    clean_recipient = recipient_address.strip()
+    if not clean_recipient.startswith("doom1"):
+        return {"error": f"Invalid recipient address: {recipient_address}. Expected 'doom1...' address."}
+    if amount_doom <= 0:
+        return {"error": "amount_doom must be greater than 0."}
+
+    seed = f"{clean_recipient}:{amount_doom}:{description}:{time.time_ns()}".encode("utf-8")
+    invoice_id = "doom-inv-" + hashlib.sha256(seed).hexdigest()[:12]
+    miner_fee = 0.001
+
+    return {
+        "status": "invoice_created",
+        "invoice_id": invoice_id,
+        "recipient_address": clean_recipient,
+        "amount_doom": float(amount_doom),
+        "miner_fee_doom": miner_fee,
+        "total_required_doom": round(float(amount_doom) + miner_fee, 8),
+        "description": str(description or "")[:200],
+        "buyer_send_command": f"python integrations/mcp/doomsday_mcp.py send {clean_recipient} {amount_doom} {invoice_id}",
+        "seller_verify_command": f"python integrations/mcp/doomsday_mcp.py verify-tx <TXID> {clean_recipient} {amount_doom} {invoice_id}",
+    }
+
+
 def verify_l1_payment(
     txid: str,
     recipient_address: str,
-    min_amount_doom: float = 0.0
+    min_amount_doom: float = 0.0,
+    expected_memo: str = ""
 ) -> Dict[str, Any]:
     """
     Cryptographically verify on-chain that a Doomsday Layer-1 UTXO transaction (txid)
-    delivered at least min_amount_doom DOOM to recipient_address.
+    delivered at least min_amount_doom DOOM to recipient_address, and optionally that
+    its signed on-chain extra_data matches expected_memo (e.g., an invoice ID).
     """
     clean_txid = txid.strip().lower()
     clean_recipient = recipient_address.strip()
+    clean_memo = str(expected_memo or "").strip()
     if len(clean_txid) < 16:
         return {"error": f"Invalid transaction ID: {txid}"}
     if not clean_recipient.startswith("doom1"):
@@ -367,7 +406,7 @@ def verify_l1_payment(
     COIN = 100_000_000
     min_sparks = int(round(float(min_amount_doom) * COIN))
 
-    # 1. Check live unspent UTXO set for recipient_address
+    # 1. Check live unspent UTXO set for recipient_address (if no memo check required)
     utxo_data = _get_json(f"/wallet/{clean_recipient}/utxos")
     matched_sparks = 0
     matched_vouts = []
@@ -377,7 +416,7 @@ def verify_l1_payment(
                 matched_sparks += int(u.get("amount", 0))
                 matched_vouts.append(int(u.get("vout", 0)))
 
-    if matched_sparks > 0 and matched_sparks >= min_sparks:
+    if not clean_memo and matched_sparks > 0 and matched_sparks >= min_sparks:
         return {
             "verified": True,
             "txid": clean_txid,
@@ -387,12 +426,23 @@ def verify_l1_payment(
             "confirmation_source": "utxo_set",
         }
 
-    # 2. Check recent mined blocks in case output was already spent
+    # 2. Check recent mined blocks (required when verifying extra_data memo or spent outputs)
     blocks = _get_json("/blocks?limit=20")
     if isinstance(blocks, list):
         for b in blocks:
             for tx in b.get("transactions", []):
                 if str(tx.get("txid", "")).lower() == clean_txid:
+                    tx_memo = str(tx.get("extra_data", "") or "").strip()
+                    if clean_memo and clean_memo not in tx_memo:
+                        return {
+                            "verified": False,
+                            "txid": clean_txid,
+                            "recipient_address": clean_recipient,
+                            "amount_doom": 0.0,
+                            "expected_memo": clean_memo,
+                            "actual_memo": tx_memo,
+                            "reason": f"Transaction memo '{tx_memo}' does not match expected invoice memo '{clean_memo}'.",
+                        }
                     block_sparks = sum(
                         int(o.get("amount", 0))
                         for o in tx.get("outputs", [])
@@ -406,7 +456,7 @@ def verify_l1_payment(
                             "amount_doom": block_sparks / COIN,
                             "block_height": b.get("height"),
                             "block_hash": b.get("hash"),
-                            "memo": tx.get("extra_data", ""),
+                            "memo": tx_memo,
                             "confirmation_source": "mined_block",
                         }
 
@@ -508,14 +558,28 @@ MCP_TOOLS = [
         },
     },
     {
+        "name": "create_l1_invoice",
+        "description": "Create a non-custodial Layer-1 DOOM payment invoice (doom-inv-<12hex> on-chain memo) for agent-to-agent commerce.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "recipient_address": {"type": "string", "description": "Seller native DOOM address (doom1...)"},
+                "amount_doom": {"type": "number", "description": "Invoice amount in DOOM"},
+                "description": {"type": "string", "description": "Optional invoice/service description", "default": ""}
+            },
+            "required": ["recipient_address", "amount_doom"],
+        },
+    },
+    {
         "name": "verify_l1_payment",
-        "description": "Verify on-chain that a Doomsday Layer-1 UTXO transaction (txid) paid recipient_address at least min_amount_doom DOOM.",
+        "description": "Verify on-chain that a Doomsday Layer-1 UTXO transaction (txid) paid recipient_address at least min_amount_doom DOOM and optionally matches expected_memo.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "txid": {"type": "string", "description": "64-char Layer-1 transaction ID"},
                 "recipient_address": {"type": "string", "description": "Expected recipient address (doom1...)"},
-                "min_amount_doom": {"type": "number", "description": "Minimum expected DOOM amount", "default": 0.0}
+                "min_amount_doom": {"type": "number", "description": "Minimum expected DOOM amount", "default": 0.0},
+                "expected_memo": {"type": "string", "description": "Optional expected on-chain extra_data memo / invoice ID", "default": ""}
             },
             "required": ["txid", "recipient_address"],
         },
@@ -541,7 +605,7 @@ def run_mcp_stdio() -> None:
             res = {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "doomsday-escrow-mcp", "version": "1.3.0"},
+                "serverInfo": {"name": "doomsday-escrow-mcp", "version": "1.4.0"},
             }
         elif method == "tools/list":
             res = {"tools": MCP_TOOLS}
@@ -576,11 +640,18 @@ def run_mcp_stdio() -> None:
                     str(targs.get("memo", "")),
                     str(targs.get("wallet_file", "wallet.json")),
                 )
+            elif tname == "create_l1_invoice":
+                payload = create_l1_invoice(
+                    str(targs.get("recipient_address", "")),
+                    float(targs.get("amount_doom", 0.0)),
+                    str(targs.get("description", "")),
+                )
             elif tname == "verify_l1_payment":
                 payload = verify_l1_payment(
                     str(targs.get("txid", "")),
                     str(targs.get("recipient_address", "")),
                     float(targs.get("min_amount_doom", 0.0)),
+                    str(targs.get("expected_memo", "")),
                 )
             else:
                 payload = {"error": f"Unknown tool: {tname}"}
@@ -614,9 +685,13 @@ if __name__ == "__main__":
         memo_arg = args[3] if len(args) > 3 else ""
         wfile = args[4] if len(args) > 4 else "wallet.json"
         print(json.dumps(send_doom_l1(args[1], float(args[2]), memo_arg, wfile), indent=2))
+    elif args and args[0] == "invoice" and len(args) > 2:
+        desc_arg = args[3] if len(args) > 3 else ""
+        print(json.dumps(create_l1_invoice(args[1], float(args[2]), desc_arg), indent=2))
     elif args and args[0] == "verify-tx" and len(args) > 2:
         min_amt = float(args[3]) if len(args) > 3 else 0.0
-        print(json.dumps(verify_l1_payment(args[1], args[2], min_amt), indent=2))
+        exp_memo = args[4] if len(args) > 4 else ""
+        print(json.dumps(verify_l1_payment(args[1], args[2], min_amt, exp_memo), indent=2))
     elif args and args[0] == "worker" and len(args) > 1:
         print(json.dumps(verify_miner_worker(args[1]), indent=2))
     elif args and args[0] == "badge" and len(args) > 1:

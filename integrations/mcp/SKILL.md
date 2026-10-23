@@ -69,7 +69,8 @@ python3 integrations/mcp/doomsday_mcp.py --mcp
 8. `format_escrow_badge`: Generate an official GitHub markdown verification badge with live shields.io link.
 9. `generate_doom_wallet`: Generate or load a sovereign client-side `secp256k1` DOOM Layer-1 wallet (`wallet.json`).
 10. `send_doom_l1`: Sign locally with `secp256k1` ECDSA and broadcast a native Doomsday Layer-1 UTXO payment with a `0.001 DOOM` miner fee paid to PoW block miners.
-11. `verify_l1_payment`: Cryptographically verify on-chain that a Layer-1 `txid` paid `recipient_address` at least `min_amount_doom` DOOM.
+11. `create_l1_invoice`: Create a non-custodial Layer-1 `DOOM` payment invoice (`doom-inv-<12hex>` on-chain `extra_data` memo) for agent-to-agent commerce.
+12. `verify_l1_payment`: Cryptographically verify on-chain that a Layer-1 `txid` paid `recipient_address` at least `min_amount_doom` DOOM and optionally matches `expected_memo` (replay-proof invoice verification).
 
 ### MCP Server Configuration (`mcp_config.json`)
 

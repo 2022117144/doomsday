@@ -20,6 +20,7 @@ Doomsday Proof-of-Escrow natively equips autonomous AI coding agents with crypto
 | **Google ADK** | [`integrations/google_adk`](google_adk/) | `FunctionTool` wrappers for Google Agent Development Kit |
 | **Microsoft Semantic Kernel** | [`integrations/semantic_kernel`](semantic_kernel/) | Kernel plugin with three read-only escrow functions |
 | **Haystack** | [`integrations/haystack`](haystack/) | Typed Haystack `Tool` objects for escrow and miner checks |
+| **Hugging Face smolagents** | [`integrations/smolagents`](smolagents/) | `CodeAgent` and `ToolCallingAgent` `Tool` subclasses |
 | **Claude-Flow & Cursor MCP** | [`integrations/claude-flow-mcp`](claude-flow-mcp/) | Zero-dependency stdio MCP server & SKILL.md for Claude Code / Cursor |
 | **Agent SKILL.md** | [`integrations/skills`](skills/) | LLM-ready markdown specification and tool contracts |
 

@@ -1,30 +1,9 @@
 {
   "protocol": "Doomsday Proof-of-Escrow v1",
   "escrow_vault_address": "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
-  "escrow_vault_reserve_doom": 30985.0,
+  "escrow_vault_reserve_doom": 28475.0,
   "vault_utxo_verified": true,
   "escrow_vault_utxo_proofs": [
-    {
-      "txid": "8117ff6298fae85a3f8ddf8d0fc2e0218f0d5b2943e70ad5c0f1243e76ffced8",
-      "vout": 1,
-      "amount": 200000000000,
-      "amount_sparks": 200000000000,
-      "amount_doom": 2000.0
-    },
-    {
-      "txid": "06c944e6045d412a1100c2d48a6e75c73fe855c3bb01374869615ef65a194375",
-      "vout": 2,
-      "amount": 247500000000,
-      "amount_sparks": 247500000000,
-      "amount_doom": 2475.0
-    },
-    {
-      "txid": "77c48cece0a5ffa524a09766286706d1ce749ceedbde72b9b3cf7ee3b4558f50",
-      "vout": 1,
-      "amount": 100000000000,
-      "amount_sparks": 100000000000,
-      "amount_doom": 1000.0
-    },
     {
       "txid": "ef4be09ea3d9548a0c172563794dcc4e82ed48c047b6326b3ea16990faaab587",
       "vout": 1,
@@ -73,14 +52,35 @@
       "amount": 147500000000,
       "amount_sparks": 147500000000,
       "amount_doom": 1475.0
+    },
+    {
+      "txid": "5557585d6743d63e81e0868faea9dcd6497447fb468eb77e9b169483b9290b94",
+      "vout": 1,
+      "amount": 200000000000,
+      "amount_sparks": 200000000000,
+      "amount_doom": 2000.0
+    },
+    {
+      "txid": "7989ff1f12bead36a889a1bc6a2a237a0ff46b1859672f85bb06211d6918e6c9",
+      "vout": 1,
+      "amount": 150000000000,
+      "amount_sparks": 150000000000,
+      "amount_doom": 1500.0
+    },
+    {
+      "txid": "d3043375b7f00cdf4d0209d55cc91f463b62d56e81f0a18926092c7e816869ca",
+      "vout": 1,
+      "amount": 100000000000,
+      "amount_sparks": 100000000000,
+      "amount_doom": 1000.0
     }
   ],
   "wdoom_base_contract": "0x623c84A5E04bF715018203334b0eFE41696eBC3E",
   "uniswap_v3_pool": "0xf7217329574249d7b389404aECF2C582662F3659",
   "total_open_bounties": 10,
   "total_locked_doom": 13750.0,
-  "total_settled_bounties": 70,
-  "total_settled_doom": 101265.0,
+  "total_settled_bounties": 71,
+  "total_settled_doom": 103765.0,
   "open_escrows": [
     {
       "escrow_id": "escrow_doom_0009",
@@ -254,6 +254,16 @@
     }
   ],
   "settled_escrows": [
+    {
+      "escrow_id": "settled_jmopendot_1792773178",
+      "issue_ref": "doomsday-network/doomsday#7",
+      "solver_github": "jmopendot",
+      "recipient_wallet": "0x87f54b64fa901476d272b9747e23ed8de3973a9c",
+      "amount_doom": 2500.0,
+      "chain": "Base Mainnet (wDOOM)",
+      "settlement_tx": "e99e88780fb3eb0e6bc5dcc36196dbfca6dd74c49ef81687bb82f0cf3b7e9c94",
+      "status": "SETTLED"
+    },
     {
       "escrow_id": "settled_jmopendot_1792770993",
       "issue_ref": "doomsday-network/bounty-guard#5",
@@ -542,16 +552,6 @@
       "amount_doom": 500.0,
       "chain": "Base Mainnet (wDOOM)",
       "settlement_tx": "https://basescan.org/tx/0xe234b7bb4072bc3982e86143e556c79197d0cd817cabe066f9b093e147b7399e",
-      "status": "SETTLED"
-    },
-    {
-      "escrow_id": "settled_2022117144_1792755889",
-      "issue_ref": "doomsday-network/bounty-guard#5",
-      "solver_github": "2022117144",
-      "recipient_wallet": "0x89728C924b550578866d33E13E4A8618d4d04d28",
-      "amount_doom": 1500.0,
-      "chain": "Base Mainnet (wDOOM)",
-      "settlement_tx": "https://basescan.org/tx/0x52511e38e5e36c444375cc9f2fb9a0daaaeb17b08a27a3098d4030d4153b92f6",
       "status": "SETTLED"
     }
   ]

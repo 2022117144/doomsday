@@ -207,6 +207,16 @@ DEFAULT_OPEN_ESCROWS: List[Dict[str, Any]] = [
 
 DEFAULT_SETTLED_ESCROWS: List[Dict[str, Any]] = [
     {
+        "escrow_id": "settled_cedarproof_bg1",
+        "issue_ref": "doomsday-network/bounty-guard#1",
+        "solver_github": "CedarProof",
+        "recipient_wallet": "0x67F2512447Ad352638EeFeC0655fdEb6C436cAF3",
+        "amount_doom": 500.0,
+        "chain": "Base Mainnet (wDOOM)",
+        "settlement_tx": "https://basescan.org/tx/0xce3c809b831fffe08c92098ec10da65d90c39596dc40b0ae77a9aacc8fbf0ff2",
+        "status": "SETTLED",
+    },
+    {
         "escrow_id": "settled_anthgg_009",
         "issue_ref": "doomsday-network/doomsday#9",
         "solver_github": "Anthgg",

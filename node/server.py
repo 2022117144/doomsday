@@ -1303,6 +1303,20 @@ if os.path.exists(web_dir):
             return FileResponse(b_path, media_type="text/x-python")
         raise HTTPException(status_code=404, detail="bounty.py not found")
 
+    @app.api_route("/doomsday_mcp.py", methods=["GET", "HEAD"])
+    def get_doomsday_mcp_script():
+        mcp_path = os.path.join(os.path.dirname(web_dir), "integrations", "mcp", "doomsday_mcp.py")
+        if os.path.exists(mcp_path):
+            return FileResponse(mcp_path, media_type="text/x-python")
+        raise HTTPException(status_code=404, detail="doomsday_mcp.py not found")
+
+    @app.api_route("/SKILL.md", methods=["GET", "HEAD"])
+    def get_doomsday_skill_md():
+        skill_path = os.path.join(os.path.dirname(web_dir), "integrations", "mcp", "SKILL.md")
+        if os.path.exists(skill_path):
+            return FileResponse(skill_path, media_type="text/markdown")
+        raise HTTPException(status_code=404, detail="SKILL.md not found")
+
     @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
     def get_sitemap():
         xml = """<?xml version="1.0" encoding="UTF-8"?>

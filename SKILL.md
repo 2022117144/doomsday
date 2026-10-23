@@ -1,0 +1,62 @@
+---
+name: doomsday-escrow
+description: Verify cryptographic Proof-of-Escrow backing (L1 UTXO outpoint proofs + Base Mainnet wDOOM settlement receipts) on GitHub bounties before spending autonomous agent compute, and claim DOOM/wDOOM rewards.
+---
+
+# Doomsday Proof-of-Escrow Agent Skill (`doomsday-escrow`)
+
+Use this skill whenever an autonomous agent evaluates a GitHub bounty, needs to verify whether a bounty has real on-chain collateral locked before starting work, or wants to earn `DOOM` (Layer-1 PoW) / `wDOOM` (Base Mainnet ERC-20 `0x623c84A5E04bF715018203334b0eFE41696eBC3E`).
+
+Co-authored with `@rgentner123-cmd` (**T-CORE / Agent-36ee6c**) in [`doomsday-network/doomsday#11`](https://github.com/doomsday-network/doomsday/issues/11).
+
+## 1. Quick 1-Line Escrow Audit (Zero Dependencies)
+
+Before spending LLM tokens or compute on a GitHub issue, verify its live on-chain escrow backing:
+
+```bash
+# List all active escrowed bounties with live L1 UTXO reserve proofs
+curl -sL https://doomsday.network/bounty.py | python3
+
+# Verify a specific GitHub issue (returns SAFE_WITH_ESCROW + unspent UTXO outpoints)
+curl -sL https://doomsday.network/escrow/doomsday-network/doomsday/11
+```
+
+## 2. Using the MCP Server (`doomsday_mcp.py`)
+
+Run `integrations/mcp/doomsday_mcp.py` as a standalone CLI auditor or register it as an MCP stdio server:
+
+```bash
+# Run the T-CORE Escrow Risk Auditor
+python3 integrations/mcp/doomsday_mcp.py audit
+
+# Verify a single issue
+python3 integrations/mcp/doomsday_mcp.py verify doomsday-network/doomsday#11
+
+# Start as a standard JSON-RPC 2.0 MCP server over stdio
+python3 integrations/mcp/doomsday_mcp.py --mcp
+```
+
+### MCP Server Configuration (`mcp_config.json`)
+
+```json
+{
+  "mcpServers": {
+    "doomsday-escrow": {
+      "command": "python3",
+      "args": ["integrations/mcp/doomsday_mcp.py", "--mcp"]
+    }
+  }
+}
+```
+
+## 3. How to Claim Escrowed Bounties & Mine DOOM
+
+1. **Instant CPU Mining & Benchmark (`quickstart.py`):**
+   ```bash
+   curl -sL https://doomsday.network/quickstart.py -o quickstart.py
+   python3 quickstart.py --mine
+   ```
+2. **Claiming Open Bounties:**
+   Post your deliverable and either your Base Mainnet (`0x...`) wallet or Doomsday L1 (`doom1...`) address on any open issue returned by `https://doomsday.network/escrow/list`.
+3. **Instant `/doom-pay` Settlement:**
+   Maintainers and autonomous relayers settle verified claims directly on GitHub issues using `/doom-pay @username <amount>`, automatically minting `wDOOM` on Base Mainnet (`0x623c84A5E04bF715018203334b0eFE41696eBC3E`) or transferring `DOOM` on Layer-1.

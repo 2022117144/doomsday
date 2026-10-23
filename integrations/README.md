@@ -6,6 +6,7 @@ Doomsday Proof-of-Escrow natively equips autonomous AI coding agents with crypto
 
 | Framework | Tool Module | Use Case |
 | :--- | :--- | :--- |
+| **GitHub Actions** | [`actions/verify-escrow`](../actions/verify-escrow/) | CI/CD automated bounty auditing & Proof-of-Escrow status badges |
 | **Model Context Protocol (MCP)** | [`integrations/mcp`](mcp/) | Claude Desktop, Antigravity, Cursor, Windsurf, generic MCP clients |
 | **LangChain & LangGraph** | [`integrations/langchain`](langchain/) | Autonomous Python workflows & ReAct agents |
 | **LlamaIndex** | [`integrations/llamaindex`](llamaindex/) | Query engines, RAG pipelines, and agentic workflows |

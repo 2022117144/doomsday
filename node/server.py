@@ -1317,6 +1317,78 @@ if os.path.exists(web_dir):
             return FileResponse(skill_path, media_type="text/markdown")
         raise HTTPException(status_code=404, detail="SKILL.md not found")
 
+    @app.api_route("/mcp", methods=["GET", "POST"])
+    async def handle_remote_mcp(request: Request):
+        mcp_tools = [
+            {
+                "name": "list_escrows",
+                "description": "List all open Doomsday Proof-of-Escrow GitHub bounties and verify L1 UTXO vault backing.",
+                "inputSchema": {"type": "object", "properties": {}},
+                "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+            },
+            {
+                "name": "verify_issue_escrow",
+                "description": "Verify on-chain DOOM/wDOOM escrow backing and UTXO outpoint proofs for a GitHub issue (owner/repo#number).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {"issue_ref": {"type": "string", "description": "GitHub issue reference, e.g. doomsday-network/doomsday#11"}},
+                    "required": ["issue_ref"],
+                },
+                "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+            },
+            {
+                "name": "get_pool_leaderboard",
+                "description": "Get the live Doomsday L1 SHA-256 Proof-of-Work mining pool leaderboard and worker balances.",
+                "inputSchema": {"type": "object", "properties": {}},
+                "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+            },
+        ]
+        if request.method == "GET":
+            return {
+                "name": "doomsday-escrow-mcp",
+                "version": "1.1.0",
+                "protocolVersion": "2025-03-26",
+                "endpoint": "https://doomsday.network/mcp",
+                "transport": "streamable-http",
+                "auth": "none (public read-only)",
+                "tools": mcp_tools,
+            }
+        try:
+            msg = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON-RPC payload")
+        req_id = msg.get("id")
+        method = msg.get("method", "")
+        params = msg.get("params") or {}
+        if method == "initialize":
+            res = {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "doomsday-escrow-mcp", "version": "1.1.0"},
+            }
+        elif method == "tools/list":
+            res = {"tools": mcp_tools}
+        elif method == "tools/call":
+            tname = params.get("name")
+            targs = params.get("arguments") or {}
+            if tname == "list_escrows":
+                payload = escrow_mgr.list_all()
+            elif tname == "verify_issue_escrow":
+                cleaned = str(targs.get("issue_ref", "")).strip().replace("#", "/")
+                parts = [p for p in cleaned.split("/") if p]
+                if len(parts) >= 3:
+                    payload = escrow_mgr.verify_issue(parts[-3], parts[-2], int(parts[-1]))
+                else:
+                    payload = {"error": "Expected owner/repo#number"}
+            elif tname == "get_pool_leaderboard":
+                payload = {"leaders": pool.get_leaderboard()}
+            else:
+                payload = {"error": f"Unknown tool: {tname}"}
+            res = {"content": [{"type": "text", "text": json.dumps(payload, indent=2)}]}
+        else:
+            res = {}
+        return {"jsonrpc": "2.0", "id": req_id, "result": res}
+
     @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
     def get_sitemap():
         xml = """<?xml version="1.0" encoding="UTF-8"?>

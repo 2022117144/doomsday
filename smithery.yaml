@@ -1,0 +1,11 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({
+      command: 'python3',
+      args: ['integrations/mcp/doomsday_mcp.py', '--mcp']
+    })
+  exampleConfig: {}

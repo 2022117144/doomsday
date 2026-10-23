@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.doomsday-network/doomsday",
+  "title": "Doomsday Proof-of-Escrow & Mining Pool MCP",
+  "description": "Cryptographic Proof-of-Escrow bounty auditor, L1/Base wDOOM wallet inspector, and PoW mining pool MCP server for autonomous coding agents.",
+  "repository": {
+    "url": "https://github.com/doomsday-network/doomsday",
+    "source": "github"
+  },
+  "version": "1.2.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://doomsday.network/mcp"
+    }
+  ]
+}

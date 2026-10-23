@@ -36,6 +36,29 @@ class TestFrameworkIntegrations(unittest.TestCase):
         tools = get_doomsday_llamaindex_tools()
         self.assertIsInstance(tools, list)
 
+    def test_claude_flow_mcp_server_and_skills(self):
+        import importlib.util
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parent.parent
+        mcp_path = root / "integrations" / "claude-flow-mcp" / "mcp_server.py"
+        skill_path = root / "integrations" / "claude-flow-mcp" / "SKILL.md"
+        escrow_skill_path = root / "integrations" / "skills" / "doomsday-escrow" / "SKILL.md"
+
+        self.assertTrue(mcp_path.exists())
+        self.assertTrue(skill_path.exists())
+        self.assertTrue(escrow_skill_path.exists())
+
+        spec = importlib.util.spec_from_file_location("claude_flow_mcp_server", str(mcp_path))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        self.assertEqual(len(mod.TOOLS), 4)
+        res = mod.handle_call_tool("doomsday_benchmark_pow", {"duration_seconds": 0.05})
+        payload = json.loads(res["content"][0]["text"])
+        self.assertGreater(payload["hashes"], 0)
+        self.assertEqual(payload["algorithm"], "DoomHash-Reference-SHA256d")
+
 
 if __name__ == "__main__":
     unittest.main()

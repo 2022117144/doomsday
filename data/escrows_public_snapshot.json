@@ -1,7 +1,7 @@
 {
   "protocol": "Doomsday Proof-of-Escrow v1",
   "escrow_vault_address": "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
-  "escrow_vault_reserve_doom": 36620.0,
+  "escrow_vault_reserve_doom": 38120.0,
   "vault_utxo_verified": true,
   "escrow_vault_utxo_proofs": [
     {

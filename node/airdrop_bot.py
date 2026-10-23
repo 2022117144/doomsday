@@ -33,8 +33,11 @@ WATCHED_ISSUES = [
     ("doomsday-network/doomsday", 7, 2500.0),
     ("doomsday-network/doomsday", 8, 500.0),
     ("doomsday-network/doomsday", 9, 1000.0),
+    ("doomsday-network/doomsday", 10, 1500.0),
+    ("doomsday-network/doomsday", 11, 3000.0),
     ("doomsday-network/bounty-guard", 1, 500.0),
     ("doomsday-network/bounty-guard", 4, 2500.0),
+    ("doomsday-network/bounty-guard", 5, 1500.0),
 ]
 
 DOOM_REGEX = re.compile(r"\b(doom1[a-fA-F0-9]{48})\b")
@@ -419,7 +422,25 @@ def poll_once(gh_token: str) -> None:
                     _save_state(state)
                     continue
 
-            if reward_doom >= 2500.0:
+            if repo == "doomsday-network/doomsday" and issue_num == 10:
+                if not _has_verified_pool_activity(body):
+                    print(f"[AirdropBot] Waiting for @{user} to mine 1+ pool share before paying #10")
+                    _save_state(state)
+                    continue
+
+            if repo == "doomsday-network/doomsday" and issue_num == 11:
+                if not ("http://" in body.lower() or "https://" in body.lower() or "mcp" in body.lower() or "skill" in body.lower()):
+                    print(f"[AirdropBot] Skipping empty integration claim by @{user} on #11")
+                    _save_state(state)
+                    continue
+
+            if repo == "doomsday-network/bounty-guard" and issue_num == 5:
+                if not ("|" in body and ("safe" in body.lower() or "quarantine" in body.lower())):
+                    print(f"[AirdropBot] Waiting for 3-row classification table from @{user} on bounty-guard#5")
+                    _save_state(state)
+                    continue
+
+            if reward_doom == 2500.0:
                 p_u = f"pool_2500:{user.lower()}"
                 p_w = f"pool_2500:{wallet.lower()}"
                 existing_keys = [k.lower() for k in state.get("paid_issue_users", [])]

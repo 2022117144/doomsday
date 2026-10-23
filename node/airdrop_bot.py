@@ -406,6 +406,22 @@ def poll_once(gh_token: str) -> None:
                 _save_state(state)
                 continue
 
+            body_low = body.lower()
+
+            if repo == "doomsday-network/doomsday" and issue_num in (3, 4):
+                if not any(kw in body_low for kw in ("h/s", "kh/s", "mh/s", "doomhash", "reference rate", "architecture:")):
+                    print(f"[AirdropBot] Skipping non-benchmark comment by @{user} on #{issue_num}")
+                    _save_state(state)
+                    continue
+
+            if repo == "doomsday-network/bounty-guard" and issue_num == 1:
+                has_bench = any(kw in body_low for kw in ("h/s", "kh/s", "mh/s", "reference rate"))
+                has_repo_report = ("/" in body and len(body.strip()) >= 60 and "requesting airdrop" not in body_low)
+                if not (has_bench or has_repo_report):
+                    print(f"[AirdropBot] Skipping empty/generic comment by @{user} on bounty-guard#1")
+                    _save_state(state)
+                    continue
+
             if repo == "doomsday-network/doomsday" and issue_num == 8:
                 if not _has_starred_repo(user, headers):
                     print(f"[AirdropBot] Waiting for @{user} to star doomsday-network/doomsday before paying #8")
@@ -429,13 +445,17 @@ def poll_once(gh_token: str) -> None:
                     continue
 
             if repo == "doomsday-network/doomsday" and issue_num == 11:
-                if not ("http://" in body.lower() or "https://" in body.lower() or "mcp" in body.lower() or "skill" in body.lower()):
-                    print(f"[AirdropBot] Skipping empty integration claim by @{user} on #11")
+                has_deliverable = (
+                    ("```" in body and ("def " in body or "name:" in body_low) and len(body) >= 400)
+                    or ("github.com/" in body_low and ("/pull/" in body_low or "/tree/" in body_low or "/blob/" in body_low or "gist.github.com" in body_low))
+                )
+                if not has_deliverable or "requesting a specific task" in body_low:
+                    print(f"[AirdropBot] Waiting for actual code/PR deliverable from @{user} on #11")
                     _save_state(state)
                     continue
 
             if repo == "doomsday-network/bounty-guard" and issue_num == 5:
-                if not ("|" in body and ("safe" in body.lower() or "quarantine" in body.lower())):
+                if not (body.count("|") >= 12 and "safe_with_escrow" in body_low and "quarantine" in body_low):
                     print(f"[AirdropBot] Waiting for 3-row classification table from @{user} on bounty-guard#5")
                     _save_state(state)
                     continue

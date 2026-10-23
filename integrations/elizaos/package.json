@@ -1,0 +1,31 @@
+{
+  "name": "@elizaos/plugin-doomsday",
+  "version": "1.0.0",
+  "description": "Official Doomsday Network Proof-of-Escrow & Cryptographic Bounty Verification Plugin for ElizaOS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test tests/**/*.test.js"
+  },
+  "keywords": [
+    "elizaos",
+    "eliza",
+    "ai16z",
+    "doomsday",
+    "proof-of-escrow",
+    "bounty",
+    "web3",
+    "base",
+    "autonomous-agents"
+  ],
+  "author": "Doomsday Network & dextermos-dev",
+  "license": "MIT",
+  "peerDependencies": {
+    "@elizaos/core": ">=0.1.9"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from node.blockchain import Blockchain
 from node.pool import MiningPool
 from node.p2p import P2PManager
+from node.escrow import EscrowManager
 from core.block import Block
 from core.transaction import COIN, Transaction, TxInput, TxOutput
 
@@ -64,6 +65,9 @@ pool = MiningPool(chain=chain, pool_address=pool_wallet["address"], fee_pct=0.0)
 # P2P Wire Protocol Manager
 p2p = P2PManager(chain=chain, listen_port=8334)
 
+# Cryptographic GitHub Issue Escrow Engine
+escrow_mgr = EscrowManager(chain=chain)
+
 # Live Workers State: miner_name -> dict
 active_miners: Dict[str, Dict[str, Any]] = {}
 
@@ -109,6 +113,18 @@ class SendTxRequest(BaseModel):
 class FaucetClaimRequest(BaseModel):
     recipient_address: str
     referrer_address: Optional[str] = None
+
+
+class CreateEscrowRequest(BaseModel):
+    issue_ref: str = Field(..., description="GitHub issue ref (e.g. 'owner/repo#42' or full GitHub URL)")
+    amount_doom: float = Field(..., ge=10.0, description="Amount of DOOM to lock in escrow (>= 10.0)")
+    creator_github: str = Field(..., min_length=1, max_length=64, description="Sponsor GitHub username")
+    title: Optional[str] = Field("", max_length=200)
+    sender_address: Optional[str] = None
+    private_key_wif: Optional[str] = None
+    lock_txid: Optional[str] = None
+    release_mode: str = Field("pr_merge_or_command", max_length=64)
+    post_github_seal: bool = True
 
 
 class ExchangeWithdrawRequest(BaseModel):
@@ -929,6 +945,56 @@ async def claim_faucet(req: FaucetClaimRequest, request: Request):
 
 
 # ==============================================================================
+# CRYPTOGRAPHIC GITHUB ESCROW & AGENT BOUNTY ENGINE ENDPOINTS
+# ==============================================================================
+
+@app.get("/escrow/list")
+def list_escrows():
+    """Return all OPEN and SETTLED on-chain GitHub issue escrows."""
+    return escrow_mgr.list_all()
+
+
+@app.get("/escrow/{owner}/{repo}/{issue_number}")
+def verify_issue_escrow(owner: str, repo: str, issue_number: int):
+    """Deterministic verification endpoint for AI agents and Bounty-Guard."""
+    return escrow_mgr.verify_issue(owner=owner, repo=repo, issue_number=issue_number)
+
+
+@app.post("/escrow/create")
+async def create_issue_escrow(req: CreateEscrowRequest):
+    """Lock DOOM on-chain to back any GitHub issue and generate a Proof-of-Escrow seal."""
+    ok, msg, record, broadcast_tx = escrow_mgr.create_escrow(
+        issue_ref=req.issue_ref,
+        amount_doom=req.amount_doom,
+        creator_github=req.creator_github,
+        title=req.title or "",
+        sender_address=req.sender_address,
+        private_key_wif=req.private_key_wif,
+        lock_txid=req.lock_txid,
+        release_mode=req.release_mode,
+    )
+    if not ok or not record:
+        raise HTTPException(status_code=400, detail=msg)
+
+    if broadcast_tx is not None:
+        await broadcast_event("new_tx", broadcast_tx.to_dict())
+        asyncio.create_task(p2p.broadcast_tx(broadcast_tx))
+
+    seal_posted = False
+    if req.post_github_seal:
+        seal_posted = escrow_mgr.post_github_escrow_seal(record)
+
+    await broadcast_event("new_escrow", record)
+    return {
+        "status": "locked",
+        "message": msg,
+        "escrow": record,
+        "github_seal_posted": seal_posted,
+        "seal_markdown": escrow_mgr.format_escrow_seal_markdown(record),
+    }
+
+
+# ==============================================================================
 # EXCHANGE DAEMON & CEX INTEGRATION RPC ENDPOINTS
 # ==============================================================================
 
@@ -1229,6 +1295,13 @@ if os.path.exists(web_dir):
         if os.path.exists(qs_path):
             return FileResponse(qs_path, media_type="text/x-python")
         raise HTTPException(status_code=404, detail="quickstart.py not found")
+
+    @app.api_route("/bounty.py", methods=["GET", "HEAD"])
+    def get_bounty_cli_script():
+        b_path = os.path.join(os.path.dirname(web_dir), "bounty.py")
+        if os.path.exists(b_path):
+            return FileResponse(b_path, media_type="text/x-python")
+        raise HTTPException(status_code=404, detail="bounty.py not found")
 
     @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
     def get_sitemap():

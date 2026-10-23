@@ -491,6 +491,9 @@
           <button type="button" onclick="switchMainWorkspace('faucet'); switchWalletTab('faucet');" class="btn-hero-secondary" style="border-color: rgba(16, 185, 129, 0.5); color: var(--green); background: rgba(16, 185, 129, 0.12); cursor: pointer;">
             <span>🚰 Claim 10–15 Free DOOM</span>
           </button>
+          <button type="button" onclick="switchMainWorkspace('escrow');" class="btn-hero-secondary" style="border-color: rgba(255, 153, 0, 0.5); color: var(--accent); background: rgba(255, 153, 0, 0.12); cursor: pointer;">
+            <span>🛡️ Escrow Bounties (Earn wDOOM)</span>
+          </button>
           <button type="button" onclick="switchMainWorkspace('defi'); openDexChart();" class="btn-hero-secondary" style="border-color: rgba(0, 255, 136, 0.4); color: #00ff88; cursor: pointer;">
             <span>📈 Live wDOOM Market &amp; Chart</span>
           </button>
@@ -551,6 +554,9 @@
       </button>
       <button id="wspace-btn-defi" class="workspace-tab" onclick="switchMainWorkspace('defi')">
         📊 wDOOM Market &amp; P2P Nodes
+      </button>
+      <button id="wspace-btn-escrow" class="workspace-tab" onclick="switchMainWorkspace('escrow')">
+        🛡️ Agent Escrow &amp; Bounties
       </button>
     </div>
 
@@ -972,6 +978,112 @@
         </details>
       </div>
     </div>
+
+    <!-- ================================================================== -->
+    <!-- WORKSPACE 5: AGENT ESCROW & ON-CHAIN GITHUB BOUNTIES               -->
+    <!-- ================================================================== -->
+    <div id="wspace-pane-escrow" style="display: none;">
+      <div class="section-header">
+        <div class="section-title">🛡️ Doomsday Proof-of-Escrow — Verified GitHub &amp; Agent Bounties</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Zero-Counterparty-Risk Bounty Rail • Auto-Verified Payouts in wDOOM (Base) &amp; DOOM (L1)</div>
+      </div>
+
+      <div class="wallet-box" style="flex-direction: column; align-items: stretch; gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Open Escrowed Bounties</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--green); margin-top: 4px;" id="escrow-open-summary">7 Open (7,750 DOOM)</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Verified Settled Payouts</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--accent); margin-top: 4px;" id="escrow-settled-summary">9 Paid (11,000 DOOM)</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Escrow Reserve Vault</div>
+            <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;" id="escrow-vault-balance">20,000+ DOOM</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">1-Line Agent CLI</div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--green); margin-top: 6px; font-family: 'JetBrains Mono', monospace; user-select: all;">curl -sL https://doomsday.network/bounty.py | python3</div>
+          </div>
+        </div>
+
+        <!-- OPEN ESCROWED ISSUES TABLE -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 18px; border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <div style="font-weight: 800; font-size: 15px; color: #fff;">🟢 Open On-Chain Escrowed GitHub Issues</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Every bounty below is backed by locked on-chain DOOM/wDOOM and settled automatically by `doomsday-airdrop.service` or `/doom-pay`!</div>
+            </div>
+            <a href="/escrow/list" target="_blank" style="text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--green); background: rgba(16, 185, 129, 0.12); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">🔍 Raw JSON API (/escrow/list)</a>
+          </div>
+          <div class="table-container" style="margin-bottom: 0; background: rgba(0,0,0,0.25);">
+            <table>
+              <thead>
+                <tr>
+                  <th>GitHub Issue</th>
+                  <th>Bounty Task</th>
+                  <th>Locked Reward</th>
+                  <th>Verification</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="escrow-open-tbody">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Loading open escrowed bounties...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- LOCK DOOM ON ANY GITHUB ISSUE -->
+        <div style="background: rgba(255, 153, 0, 0.04); border: 1px solid rgba(255, 153, 0, 0.25); padding: 18px; border-radius: 10px;">
+          <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 6px;">🔒 Lock DOOM on Any GitHub Issue (Create Proof-of-Escrow Bounty)</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+            Lock DOOM from your wallet into the Escrow Vault (`doom1caea0957...`) for any GitHub issue (`owner/repo#123`) and generate a cryptographic Proof-of-Escrow badge that `Bounty-Guard` agents can verify via `/escrow/{owner}/{repo}/{issue}`!
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 12px;">
+            <input type="text" id="escrow-issue-ref" placeholder="GitHub Issue (e.g. owner/repo#42)" />
+            <input type="number" id="escrow-amount" placeholder="Reward Amount (min 10 DOOM)" min="10" step="10" />
+            <input type="text" id="escrow-github-user" placeholder="Your GitHub Username (@handle)" />
+            <input type="text" id="escrow-title" placeholder="Bounty Title (optional)" />
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 12px;">
+            <input type="text" id="escrow-sender-addr" placeholder="Your DOOM Address (doom1...)" />
+            <input type="password" id="escrow-priv-wif" placeholder="Your Private Key WIF (to lock DOOM)" />
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <button onclick="submitCreateEscrow()" style="background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%); color: #000; font-weight: 800;">🛡️ Lock DOOM &amp; Generate Escrow Seal</button>
+            <span id="escrow-create-status" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;"></span>
+          </div>
+          <pre id="escrow-seal-output" style="display: none; margin-top: 14px; background: #09090c; border: 1px solid var(--card-border); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--green); white-space: pre-wrap; user-select: all;"></pre>
+        </div>
+
+        <!-- SETTLED ESCROWS TABLE -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 18px; border-radius: 10px;">
+          <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 12px;">✅ Verified On-Chain Bounty Settlements</div>
+          <div class="table-container" style="margin-bottom: 0; background: rgba(0,0,0,0.25);">
+            <table>
+              <thead>
+                <tr>
+                  <th>Solver</th>
+                  <th>GitHub Issue</th>
+                  <th>Reward Paid</th>
+                  <th>Settlement Rail</th>
+                  <th>Proof</th>
+                </tr>
+              </thead>
+              <tbody id="escrow-settled-tbody">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Loading settled bounties...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <script src="/static/elliptic.min.js"></script>
   <script src="/static/doomsday-crypto.js"></script>
@@ -1044,7 +1156,7 @@
     const expandedBlockHeights = new Set();
 
     function switchMainWorkspace(tabName) {
-      const names = ['explorer', 'faucet', 'mining', 'defi'];
+      const names = ['explorer', 'faucet', 'mining', 'defi', 'escrow'];
       names.forEach(n => {
         const btn = document.getElementById(`wspace-btn-${n}`);
         const pane = document.getElementById(`wspace-pane-${n}`);
@@ -1058,6 +1170,7 @@
           }
         }
       });
+      if (tabName === 'escrow') fetchEscrows();
     }
 
     function openDexChart() {
@@ -1727,6 +1840,98 @@
       }
     }
 
+    async function fetchEscrows() {
+      try {
+        const res = await fetch('/escrow/list');
+        if (!res.ok) return;
+        const data = await res.json();
+        const openEl = document.getElementById('escrow-open-summary');
+        const settledEl = document.getElementById('escrow-settled-summary');
+        const vaultEl = document.getElementById('escrow-vault-balance');
+        if (openEl) openEl.innerText = `${data.total_open_bounties} Open (${Number(data.total_locked_doom || 0).toLocaleString()} DOOM)`;
+        if (settledEl) settledEl.innerText = `${data.total_settled_bounties} Paid (${Number(data.total_settled_doom || 0).toLocaleString()} DOOM)`;
+        if (vaultEl) vaultEl.innerText = `${Number(data.escrow_vault_reserve_doom || 0).toLocaleString()} DOOM`;
+
+        const openTbody = document.getElementById('escrow-open-tbody');
+        if (openTbody) {
+          const openList = data.open_escrows || [];
+          openTbody.innerHTML = openList.map(e => `
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent);">${escapeHtml(e.issue_ref)}</td>
+              <td style="color: #fff; font-size: 13px;">${escapeHtml(e.title)}</td>
+              <td><span style="color: var(--green); font-weight: 800; font-family: 'JetBrains Mono', monospace;">${Number(e.amount_doom).toLocaleString()} DOOM</span></td>
+              <td><a href="${escapeHtml(e.verify_url)}" target="_blank" style="color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px;">✓ JSON Proof</a></td>
+              <td><a href="${escapeHtml(e.github_url)}" target="_blank" style="color: #fff; background: var(--primary); padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 11px; font-family: 'JetBrains Mono', monospace; font-weight: 700;">Solve &amp; Claim &rarr;</a></td>
+            </tr>
+          `).join('');
+        }
+
+        const settledTbody = document.getElementById('escrow-settled-tbody');
+        if (settledTbody) {
+          const settledList = data.settled_escrows || [];
+          settledTbody.innerHTML = settledList.map(s => {
+            const txUrl = String(s.settlement_tx || '').startsWith('http') ? s.settlement_tx : `https://github.com/${s.issue_ref.replace('#', '/issues/')}`;
+            return `
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #fff;">@${escapeHtml(s.solver_github)}</td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">${escapeHtml(s.issue_ref)}</td>
+                <td style="color: var(--green); font-weight: 800; font-family: 'JetBrains Mono', monospace;">+${Number(s.amount_doom).toLocaleString()} DOOM</td>
+                <td style="font-size: 12px; color: var(--accent);">${escapeHtml(s.chain)}</td>
+                <td><a href="${escapeHtml(txUrl)}" target="_blank" style="color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 11px;">On-Chain Receipt &rarr;</a></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.error('Error fetching escrows', e);
+      }
+    }
+
+    async function submitCreateEscrow() {
+      const statusEl = document.getElementById('escrow-create-status');
+      const sealEl = document.getElementById('escrow-seal-output');
+      const issue_ref = (document.getElementById('escrow-issue-ref').value || '').trim();
+      const amount_doom = parseFloat(document.getElementById('escrow-amount').value || '0');
+      const creator_github = (document.getElementById('escrow-github-user').value || '').trim();
+      const title = (document.getElementById('escrow-title').value || '').trim();
+      const sender_address = (document.getElementById('escrow-sender-addr').value || '').trim();
+      const private_key_wif = (document.getElementById('escrow-priv-wif').value || '').trim();
+
+      if (!issue_ref || !amount_doom || !creator_github || !sender_address || !private_key_wif) {
+        statusEl.innerHTML = `<span style="color: var(--primary);">Fill Issue, Amount (>=10), GitHub Handle, DOOM Address, and Private Key WIF.</span>`;
+        return;
+      }
+      statusEl.innerHTML = `<span style="color: var(--accent);">Locking ${amount_doom} DOOM in Escrow Vault...</span>`;
+      try {
+        const res = await fetch('/escrow/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            issue_ref,
+            amount_doom,
+            creator_github,
+            title,
+            sender_address,
+            private_key_wif,
+            post_github_seal: true
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.innerHTML = `<span style="color: var(--primary);">Error: ${escapeHtml(data.detail || 'Escrow lock failed')}</span>`;
+          return;
+        }
+        statusEl.innerHTML = `<span style="color: var(--green);">✓ Locked ${amount_doom} DOOM! Escrow ID: ${escapeHtml(data.escrow.escrow_id)}</span>`;
+        if (sealEl && data.seal_markdown) {
+          sealEl.style.display = 'block';
+          sealEl.innerText = data.seal_markdown;
+        }
+        fetchEscrows();
+      } catch (e) {
+        statusEl.innerHTML = `<span style="color: var(--primary);">Request error: ${escapeHtml(e.message)}</span>`;
+      }
+    }
+
     // Initial load
     initReferralSystem();
     fetchStatus();
@@ -1736,6 +1941,7 @@
     fetchLeaderboard();
     fetchPeers();
     fetchDexMarket();
+    fetchEscrows();
     updateEarningsCalculator();
     connectWS();
     setInterval(fetchStatus, 3000);

@@ -42,6 +42,7 @@ EVM_REGEX = re.compile(r"\b(0x[a-fA-F0-9]{40})\b")
 
 IGNORED_EVM_ADDRESSES = {
     WDOOM_CONTRACT.lower(),
+    "0x930a51b09612a75e2c9640111f6632d094d5a781",  # Historical v1 wDOOM contract
     "0xf7217329574249d7b389404aecf2c582662f3659",
     "0x000000000000000000000000000000000000dead",
     "0x0000000000000000000000000000000000000000",
@@ -51,6 +52,49 @@ IGNORED_EVM_ADDRESSES = {
     "0x89205a31c82f1253e151853b0224d5963e3e7231",
     "0x89205a3a3b2a69de6dbf7f01ed13b2108b2c43e7",
 }
+
+DOOM_PAY_REGEX = re.compile(
+    r"/(?:doom-pay|doom-release)\s+@?([A-Za-z0-9_.-]+)(?:\s+(\d+(?:\.\d+)?))?",
+    re.IGNORECASE,
+)
+ESCROWS_PATH = os.path.join(BASE_DIR, "data", "escrows.json")
+
+
+def _record_escrow_settlement(
+    issue_ref: str,
+    solver_github: str,
+    recipient_wallet: str,
+    amount_doom: float,
+    txid: str,
+    close_custom_escrow_id: Optional[str] = None,
+) -> None:
+    try:
+        if not os.path.exists(ESCROWS_PATH):
+            return
+        with open(ESCROWS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if close_custom_escrow_id:
+            for e in data.get("open_escrows", []):
+                if e.get("escrow_id") == close_custom_escrow_id:
+                    e["status"] = "SETTLED"
+        settled = data.setdefault("settled_escrows", [])
+        settled.insert(
+            0,
+            {
+                "escrow_id": f"settled_{solver_github.lower()}_{int(time.time())}",
+                "issue_ref": issue_ref,
+                "solver_github": solver_github,
+                "recipient_wallet": recipient_wallet,
+                "amount_doom": round(float(amount_doom), 2),
+                "chain": "Base Mainnet (wDOOM)" if recipient_wallet.lower().startswith("0x") else "Doomsday L1 (DOOM)",
+                "settlement_tx": txid,
+                "status": "SETTLED",
+            },
+        )
+        with open(ESCROWS_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"[AirdropBot] Escrow settlement record warning: {e}")
 
 IGNORED_DOOM_ADDRESSES = {
     VAULT_ADDRESS.lower(),
@@ -305,6 +349,45 @@ def poll_once(gh_token: str) -> None:
                 continue
             state["processed_comments"].append(cid)
 
+            # Check for /doom-pay @username <amount> or /doom-release @username
+            m_pay = DOOM_PAY_REGEX.search(body)
+            if m_pay and user.lower() == "doomsday-network":
+                target_user = m_pay.group(1).strip().lstrip("@")
+                pay_amt = float(m_pay.group(2)) if m_pay.group(2) else reward_doom
+                target_wallet = _extract_user_wallet(body)
+                if not target_wallet:
+                    for prev_c in reversed(comments):
+                        if ((prev_c.get("user") or {}).get("login") or "").lower() == target_user.lower():
+                            w_cand = _extract_user_wallet(prev_c.get("body", ""))
+                            if w_cand:
+                                target_wallet = w_cand
+                                break
+                if target_wallet:
+                    txid = _send_onchain_reward(target_wallet, pay_amt)
+                    if txid:
+                        _record_escrow_settlement(f"{repo}#{issue_num}", target_user, target_wallet, pay_amt, txid)
+                        _save_state(state)
+                        if gh_token:
+                            tip_reply = (
+                                f"⚡ **`/doom-pay` Executed — `{pay_amt:,.1f} DOOM / wDOOM` Sent to @{target_user}!** 🛡️\n\n"
+                                f"- **Recipient:** @{target_user} (`{target_wallet}`)\n"
+                                f"- **On-Chain Settlement TxID:** `{txid}`\n"
+                                f"- **Escrow Registry:** [https://doomsday.network/escrow/list](https://doomsday.network/escrow/list)"
+                            )
+                            try:
+                                urllib.request.urlopen(
+                                    urllib.request.Request(
+                                        f"https://api.github.com/repos/{repo}/issues/{issue_num}/comments",
+                                        data=json.dumps({"body": tip_reply}).encode("utf-8"),
+                                        headers=headers,
+                                        method="POST",
+                                    ),
+                                    timeout=15,
+                                ).read()
+                            except Exception:
+                                pass
+                continue
+
             issue_user_key = f"{repo}#{issue_num}:{user.lower()}"
             if user.lower() == "doomsday-network" or issue_user_key in [
                 k.lower() for k in state.get("paid_issue_users", [])
@@ -366,6 +449,7 @@ def poll_once(gh_token: str) -> None:
             if reward_doom >= 2500.0:
                 state["paid_issue_users"].append(f"pool_2500:{user.lower()}")
                 state["paid_issue_users"].append(f"pool_2500:{wallet.lower()}")
+            _record_escrow_settlement(f"{repo}#{issue_num}", user, wallet, reward_doom, txid)
             _save_state(state)
 
             if gh_token:

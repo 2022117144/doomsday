@@ -150,7 +150,25 @@ async function main() {
                   continue;
                 }
 
-                const evmRecipient = ethers.getAddress(extraData);
+                const ignoredContracts = new Set([
+                  '0x930a51b09612a75e2c9640111f6632d094d5a781',
+                  '0x623c84a5e04bf715018203334b0efe41696ebc3e',
+                  '0xf7217329574249d7b389404aecf2c582662f3659',
+                  '0x000000000000000000000000000000000000dead',
+                  '0x0000000000000000000000000000000000000000'
+                ]);
+                if (ignoredContracts.has(extraData.toLowerCase())) {
+                  console.warn(`   ⚠️ Skipping ignored protocol/contract address in extra_data: ${extraData}`);
+                  continue;
+                }
+
+                let evmRecipient;
+                try {
+                  evmRecipient = ethers.getAddress(extraData.toLowerCase());
+                } catch (addrErr) {
+                  console.warn(`   ⚠️ Malformed EVM address in extra_data (${extraData}): ${addrErr.message}`);
+                  continue;
+                }
                 const alreadyProcessed = await contract.processedDoomsdayTxs(tx.txid);
 
                 if (alreadyProcessed) {

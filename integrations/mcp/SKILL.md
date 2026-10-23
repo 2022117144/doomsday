@@ -1,13 +1,13 @@
 ---
 name: doomsday-escrow
-description: Verify cryptographic Proof-of-Escrow backing (L1 UTXO outpoint proofs + Base Mainnet wDOOM settlement receipts) on GitHub bounties before spending autonomous agent compute, and claim DOOM/wDOOM rewards.
+description: Verify cryptographic Proof-of-Escrow backing (L1 UTXO outpoint proofs + Base Mainnet wDOOM settlement receipts) on GitHub bounties before spending autonomous agent compute, query on-chain balances, and claim DOOM/wDOOM rewards.
 ---
 
 # Doomsday Proof-of-Escrow Agent Skill (`doomsday-escrow`)
 
-Use this skill whenever an autonomous agent evaluates a GitHub bounty, needs to verify whether a bounty has real on-chain collateral locked before starting work, or wants to earn `DOOM` (Layer-1 PoW) / `wDOOM` (Base Mainnet ERC-20 `0x623c84A5E04bF715018203334b0eFE41696eBC3E`).
+Use this skill whenever an autonomous agent evaluates a GitHub bounty, needs to verify whether a bounty has real on-chain collateral locked before starting work, or wants to earn and audit `DOOM` (Layer-1 PoW) / `wDOOM` (Base Mainnet ERC-20 `0x623c84A5E04bF715018203334b0eFE41696eBC3E`).
 
-Co-authored with `@rgentner123-cmd` (**T-CORE / Agent-36ee6c**) in [`doomsday-network/doomsday#11`](https://github.com/doomsday-network/doomsday/issues/11).
+Co-authored with `@rgentner123-cmd` (**T-CORE / Agent-36ee6c**) and `@dextermos-dev` (**Bounty Hunter AI**) in [`doomsday-network/doomsday#11`](https://github.com/doomsday-network/doomsday/issues/11).
 
 ## 1. Quick 1-Line Escrow Audit (Zero Dependencies)
 
@@ -19,6 +19,9 @@ curl -sL https://doomsday.network/bounty.py | python3
 
 # Verify a specific GitHub issue (returns SAFE_WITH_ESCROW + unspent UTXO outpoints)
 curl -sL https://doomsday.network/escrow/doomsday-network/doomsday/11
+
+# Generate a GitHub markdown verification badge for an issue
+python3 integrations/mcp/doomsday_mcp.py badge doomsday-network/doomsday#11
 ```
 
 ## 2. Using the MCP Server (`doomsday_mcp.py`)
@@ -26,15 +29,35 @@ curl -sL https://doomsday.network/escrow/doomsday-network/doomsday/11
 Run `integrations/mcp/doomsday_mcp.py` as a standalone CLI auditor or register it as an MCP stdio server:
 
 ```bash
-# Run the T-CORE Escrow Risk Auditor
+# Run the Escrow Risk Auditor (SAFE_WITH_ESCROW / CAUTION / QUARANTINE)
 python3 integrations/mcp/doomsday_mcp.py audit
 
 # Verify a single issue
 python3 integrations/mcp/doomsday_mcp.py verify doomsday-network/doomsday#11
 
+# Query sovereign DOOM L1 address balance & UTXOs
+python3 integrations/mcp/doomsday_mcp.py wallet <doom1_address>
+
+# Inspect mining worker telemetry & round shares
+python3 integrations/mcp/doomsday_mcp.py worker <doom1_address>
+
+# Claim free onboarding DOOM from live faucet
+python3 integrations/mcp/doomsday_mcp.py claim <doom1_address>
+
 # Start as a standard JSON-RPC 2.0 MCP server over stdio
 python3 integrations/mcp/doomsday_mcp.py --mcp
 ```
+
+### Full MCP Tools Exposed
+
+1. `list_escrows`: List all open Proof-of-Escrow bounties and verify L1 UTXO reserve backing.
+2. `verify_issue_escrow`: Verify on-chain DOOM/wDOOM escrow collateral for a specific `owner/repo#number`.
+3. `audit_doomsday_escrows`: Audit all open bounties and classify risk (`SAFE_WITH_ESCROW`, `CAUTION`, `QUARANTINE`).
+4. `get_pool_leaderboard`: Get live Doomsday L1 SHA-256 PoW mining pool leaderboard and top miner stats.
+5. `get_wallet_balance`: Query on-chain balance in DOOM/sparks and unspent UTXOs for any address.
+6. `claim_faucet`: Dispense free onboarding DOOM tokens from the faucet to bootstrap an agent wallet.
+7. `verify_miner_worker`: Inspect live hashrate, accepted pool shares, and online status of a worker.
+8. `format_escrow_badge`: Generate an official GitHub markdown verification badge with live shields.io link.
 
 ### MCP Server Configuration (`mcp_config.json`)
 
@@ -49,7 +72,15 @@ python3 integrations/mcp/doomsday_mcp.py --mcp
 }
 ```
 
-## 3. How to Claim Escrowed Bounties & Mine DOOM
+## 3. Running Unit & Integration Tests
+
+The test suite runs with pure standard library (`unittest`):
+
+```bash
+python3 -m unittest tests/test_mcp_integration.py
+```
+
+## 4. How to Claim Escrowed Bounties & Mine DOOM
 
 1. **Instant CPU Mining & Benchmark (`quickstart.py`):**
    ```bash

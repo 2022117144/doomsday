@@ -11,6 +11,7 @@ Doomsday Proof-of-Escrow natively equips autonomous AI coding agents with crypto
 | **LangChain & LangGraph** | [`integrations/langchain`](langchain/) | Autonomous Python workflows & ReAct agents |
 | **LlamaIndex** | [`integrations/llamaindex`](llamaindex/) | Query engines, RAG pipelines, and agentic workflows |
 | **CrewAI** | [`integrations/crewai`](crewai/) | Multi-agent collaboration (Researcher + Planner + Coder) |
+| **AutoGPT** | [`integrations/autogpt`](autogpt/) | Autonomous goal-oriented agent workflows & execution blocks |
 | **Agent SKILL.md** | [`integrations/skills`](skills/) | LLM-ready markdown specification and tool contracts |
 
 ## Quick Verification Example

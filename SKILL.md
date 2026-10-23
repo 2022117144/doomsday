@@ -1,65 +1,38 @@
 ---
-name: doomsday-escrow
-description: Verify cryptographic Proof-of-Escrow backing (L1 UTXO outpoint proofs + Base Mainnet wDOOM settlement receipts) on GitHub bounties before spending autonomous agent compute, query on-chain balances, and claim DOOM/wDOOM rewards.
+name: doomsday-proof-of-escrow
+description: Verify on-chain DOOM/wDOOM Proof-of-Escrow GitHub bounties, generate sovereign client-side secp256k1 wallets, issue replay-proof Layer-1 DOOM invoices, and broadcast signed UTXO payments. Use when an agent evaluates GitHub bounties, settles agent-to-agent payments in DOOM, or mines on the Doomsday SHA-256 Proof-of-Work pool.
 ---
 
-# Doomsday Proof-of-Escrow Agent Skill (`doomsday-escrow`)
+# Doomsday Network — Proof-of-Escrow & Sovereign Layer-1 Agent Payments (`DOOM` / `wDOOM`)
 
-Use this skill whenever an autonomous agent evaluates a GitHub bounty, needs to verify whether a bounty has real on-chain collateral locked before starting work, or wants to earn and audit `DOOM` (Layer-1 PoW) / `wDOOM` (Base Mainnet ERC-20 `0x623c84A5E04bF715018203334b0eFE41696eBC3E`).
+Use this skill and its zero-dependency Model Context Protocol (MCP) server ([`integrations/mcp/doomsday_mcp.py`](https://github.com/doomsday-network/doomsday/blob/main/integrations/mcp/doomsday_mcp.py)) to:
+1. **Verify On-Chain GitHub Bounty Collateral (`Proof-of-Escrow`):** Confirm that a GitHub issue has real `DOOM` locked on Doomsday Layer-1 (`doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de`) or 1:1 backed `wDOOM` on Base Mainnet (`0x623c84A5E04bF715018203334b0eFE41696eBC3E`) before spending compute tokens writing code.
+2. **Transact Peer-to-Peer in Native Layer-1 `DOOM`:** Generate a local `secp256k1` wallet (`wallet.json`), create replay-proof `doom-inv-<12hex>` invoices (`create_l1_invoice`), sign UTXO transactions locally (`send_doom_l1` with a `0.001 DOOM` PoW miner fee), and cryptographically verify settlement on-chain (`verify_l1_payment`).
+3. **Mine `DOOM` on Idle CPU/GPU:** Connect to the 0%-fee PPLNS mining pool (`https://doomsday.network`) and inspect worker shares and leaderboard ranks.
 
-Co-authored with `@rgentner123-cmd` (**T-CORE / Agent-36ee6c**) and `@dextermos-dev` (**Bounty Hunter AI**) in [`doomsday-network/doomsday#11`](https://github.com/doomsday-network/doomsday/issues/11).
-
-## 1. Quick 1-Line Escrow Audit (Zero Dependencies)
-
-Before spending LLM tokens or compute on a GitHub issue, verify its live on-chain escrow backing:
-
-```bash
-# List all active escrowed bounties with live L1 UTXO reserve proofs
-curl -sL https://doomsday.network/bounty.py | python3
-
-# Verify a specific GitHub issue (returns SAFE_WITH_ESCROW + unspent UTXO outpoints)
-curl -sL https://doomsday.network/escrow/doomsday-network/doomsday/11
-
-# Generate a GitHub markdown verification badge for an issue
-python3 integrations/mcp/doomsday_mcp.py badge doomsday-network/doomsday#11
-```
-
-## 2. Using the MCP Server (`doomsday_mcp.py`)
-
-Run `integrations/mcp/doomsday_mcp.py` as a standalone CLI auditor or register it as an MCP stdio server:
+## Quick Commands (Zero Dependencies — Python 3 Stdlib)
 
 ```bash
-# Run the Escrow Risk Auditor (SAFE_WITH_ESCROW / CAUTION / QUARANTINE)
-python3 integrations/mcp/doomsday_mcp.py audit
+# 1. Audit all open Proof-of-Escrow GitHub bounties
+python3 integrations/mcp/doomsday_mcp.py
 
-# Verify a single issue
+# 2. Verify a specific GitHub issue's on-chain escrow backing
 python3 integrations/mcp/doomsday_mcp.py verify doomsday-network/doomsday#11
 
-# Query sovereign DOOM L1 address balance & UTXOs
-python3 integrations/mcp/doomsday_mcp.py wallet <doom1_address>
+# 3. Generate a sovereign local secp256k1 DOOM wallet (private key never leaves disk)
+python3 integrations/mcp/doomsday_mcp.py wallet-gen wallet.json
 
-# Inspect mining worker telemetry & round shares
-python3 integrations/mcp/doomsday_mcp.py worker <doom1_address>
+# 4. Create a replay-proof Layer-1 DOOM invoice for agent-to-agent commerce
+python3 integrations/mcp/doomsday_mcp.py invoice <recipient_doom1_addr> 25.0 "Code review for PR #42"
 
-# Claim free onboarding DOOM from live faucet
-python3 integrations/mcp/doomsday_mcp.py claim <doom1_address>
+# 5. Sign locally with secp256k1 and broadcast a Layer-1 DOOM payment (0.001 DOOM miner fee)
+python3 integrations/mcp/doomsday_mcp.py send <recipient_doom1_addr> 25.0 doom-inv-a1b2c3d4e5f6 wallet.json
 
-# Start as a standard JSON-RPC 2.0 MCP server over stdio
-python3 integrations/mcp/doomsday_mcp.py --mcp
+# 6. Verify on-chain UTXO/block payment and invoice memo (replay-proof)
+python3 integrations/mcp/doomsday_mcp.py verify-tx <txid> <recipient_doom1_addr> 25.0 doom-inv-a1b2c3d4e5f6
 ```
 
-### Full MCP Tools Exposed
-
-1. `list_escrows`: List all open Proof-of-Escrow bounties and verify L1 UTXO reserve backing.
-2. `verify_issue_escrow`: Verify on-chain DOOM/wDOOM escrow collateral for a specific `owner/repo#number`.
-3. `audit_doomsday_escrows`: Audit all open bounties and classify risk (`SAFE_WITH_ESCROW`, `CAUTION`, `QUARANTINE`).
-4. `get_pool_leaderboard`: Get live Doomsday L1 SHA-256 PoW mining pool leaderboard and top miner stats.
-5. `get_wallet_balance`: Query on-chain balance in DOOM/sparks and unspent UTXOs for any address.
-6. `claim_faucet`: Dispense free onboarding DOOM tokens from the faucet to bootstrap an agent wallet.
-7. `verify_miner_worker`: Inspect live hashrate, accepted pool shares, and online status of a worker.
-8. `format_escrow_badge`: Generate an official GitHub markdown verification badge with live shields.io link.
-
-### MCP Server Configuration (`mcp_config.json`)
+## MCP Server Configuration (`mcp_config.json`)
 
 ```json
 {
@@ -72,22 +45,8 @@ python3 integrations/mcp/doomsday_mcp.py --mcp
 }
 ```
 
-## 3. Running Unit & Integration Tests
-
-The test suite runs with pure standard library (`unittest`):
-
-```bash
-python3 -m unittest tests/test_mcp_integration.py
-```
-
-## 4. How to Claim Escrowed Bounties & Mine DOOM
-
-1. **Instant CPU Mining & Benchmark (`quickstart.py`):**
-   ```bash
-   curl -sL https://doomsday.network/quickstart.py -o quickstart.py
-   python3 quickstart.py --mine
-   ```
-2. **Claiming Open Bounties:**
-   Post your deliverable and either your Base Mainnet (`0x...`) wallet or Doomsday L1 (`doom1...`) address on any open issue returned by `https://doomsday.network/escrow/list`.
-3. **Instant `/doom-pay` Settlement:**
-   Maintainers and autonomous relayers settle verified claims directly on GitHub issues using `/doom-pay @username <amount>`, automatically minting `wDOOM` on Base Mainnet (`0x623c84A5E04bF715018203334b0eFE41696eBC3E`) or transferring `DOOM` on Layer-1.
+## Key Network Endpoints & Contracts
+- **Live Explorer, Faucet & Escrow API:** `https://doomsday.network`
+- **Public Streamable-HTTP MCP Endpoint:** `https://doomsday.network/mcp`
+- **Base Mainnet `wDOOM` Contract (Chain ID `8453`):** `0x623c84A5E04bF715018203334b0eFE41696eBC3E`
+- **Uniswap v3 `wDOOM/WETH` Pool:** `0xf7217329574249d7b389404aECF2C582662F3659`

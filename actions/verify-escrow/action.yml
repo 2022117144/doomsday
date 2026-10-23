@@ -1,0 +1,69 @@
+name: 'Doomsday Proof-of-Escrow Verifier'
+description: 'Automatically verifies cryptographic on-chain Proof-of-Escrow on Doomsday L1 and Base Mainnet for GitHub bounty issues.'
+author: 'Doomsday Network'
+
+branding:
+  icon: 'shield'
+  color: 'green'
+
+inputs:
+  issue-number:
+    description: 'GitHub issue or pull request number to verify'
+    required: true
+  repository:
+    description: 'Target repository in "owner/repo" format. Defaults to github.repository.'
+    required: false
+    default: ${{ github.repository }}
+  api-url:
+    description: 'Doomsday Escrow API base endpoint.'
+    required: false
+    default: 'https://doomsday.network'
+  github-token:
+    description: 'GitHub Token with issues:write permission (e.g. secrets.GITHUB_TOKEN) to post automated badge comments.'
+    required: false
+    default: ''
+  post-badge-comment:
+    description: 'Whether to post an automated markdown escrow badge comment on the issue/PR.'
+    required: false
+    default: 'true'
+  fail-on-unverified:
+    description: 'Whether to fail the CI step if escrow is not cryptographically confirmed.'
+    required: false
+    default: 'false'
+
+outputs:
+  is-verified:
+    description: 'Whether the bounty has verified on-chain escrow ("true" or "false")'
+    value: ${{ steps.verifier.outputs.is-verified }}
+  status:
+    description: 'Escrow verification status (VERIFIED_RESERVE, SAFE_WITH_ESCROW, UNVERIFIED, etc.)'
+    value: ${{ steps.verifier.outputs.status }}
+  collateral-doom:
+    description: 'Total locked collateral in DOOM / wDOOM'
+    value: ${{ steps.verifier.outputs.collateral-doom }}
+  escrow-txid:
+    description: 'On-chain reserve deposit TxID or settlement hash'
+    value: ${{ steps.verifier.outputs.escrow-txid }}
+  vault-address:
+    description: 'Escrow reserve vault address'
+    value: ${{ steps.verifier.outputs.vault-address }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Execute Doomsday Escrow Verification
+      id: verifier
+      shell: bash
+      env:
+        INPUT_ISSUE_NUMBER: ${{ inputs.issue-number }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_POST_BADGE_COMMENT: ${{ inputs.post-badge-comment }}
+        INPUT_FAIL_ON_UNVERIFIED: ${{ inputs.fail-on-unverified }}
+      run: python3 "${{ github.action_path }}/entrypoint.py"

@@ -13,6 +13,7 @@ Doomsday Proof-of-Escrow natively equips autonomous AI coding agents with crypto
 | **CrewAI** | [`integrations/crewai`](crewai/) | Multi-agent collaboration (Researcher + Planner + Coder) |
 | **ElizaOS (ai16z)** | [`integrations/elizaos`](elizaos/) | Autonomous Web3 AI agents, Discord/Telegram bots, multi-agent runtimes |
 | **AutoGPT** | [`integrations/autogpt`](autogpt/) | Autonomous goal-oriented agent workflows & execution blocks |
+| **Microsoft AutoGen** | [`integrations/autogen`](autogen/) | Conversable multi-agent systems & automated group chats |
 | **Claude-Flow & Cursor MCP** | [`integrations/claude-flow-mcp`](claude-flow-mcp/) | Zero-dependency stdio MCP server & SKILL.md for Claude Code / Cursor |
 | **Agent SKILL.md** | [`integrations/skills`](skills/) | LLM-ready markdown specification and tool contracts |
 

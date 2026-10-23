@@ -207,6 +207,16 @@ DEFAULT_OPEN_ESCROWS: List[Dict[str, Any]] = [
 
 DEFAULT_SETTLED_ESCROWS: List[Dict[str, Any]] = [
     {
+        "escrow_id": "settled_anthgg_009",
+        "issue_ref": "doomsday-network/doomsday#9",
+        "solver_github": "Anthgg",
+        "recipient_wallet": "0xb0129B682fa218Ab0Cb7E7846EFb3805eE97Ea2b",
+        "amount_doom": 1000.0,
+        "chain": "Base Mainnet (wDOOM)",
+        "settlement_tx": "https://basescan.org/tx/0xd330b11fb7678025d8dac131539cb622711e9e07b851fcc3a13ffe0ec2e837a3",
+        "status": "SETTLED",
+    },
+    {
         "escrow_id": "settled_anthgg_007",
         "issue_ref": "doomsday-network/doomsday#7",
         "solver_github": "Anthgg",

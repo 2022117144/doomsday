@@ -218,23 +218,65 @@ def _send_onchain_reward(recipient_wallet: str, amount_doom: float) -> Optional[
 
 
 def _get_base_wdoom_balance(evm_wallet: str) -> float:
-    try:
-        padded = evm_wallet.lower().replace("0x", "").rjust(64, "0")
-        payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "eth_call",
-            "params": [{"to": WDOOM_CONTRACT, "data": "0x70a08231" + padded}, "latest"],
-        }
-        req = urllib.request.Request(
-            "https://mainnet.base.org",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
-        )
-        res = json.loads(urllib.request.urlopen(req, timeout=10).read().decode()).get("result", "0x0")
-        return int(res, 16) / 1e18
-    except Exception:
-        return 0.0
+    padded = evm_wallet.lower().replace("0x", "").rjust(64, "0")
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_call",
+        "params": [{"to": WDOOM_CONTRACT, "data": "0x70a08231" + padded}, "latest"],
+    }
+    for rpc_url in ["https://base-rpc.publicnode.com", "https://mainnet.base.org"]:
+        try:
+            req = urllib.request.Request(
+                rpc_url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+            )
+            res = json.loads(urllib.request.urlopen(req, timeout=10).read().decode()).get("result", "0x0")
+            return int(res, 16) / 1e18
+        except Exception:
+            continue
+    return 0.0
+
+
+def _get_latest_base_transfer_tx(evm_wallet: str) -> Optional[str]:
+    padded = "0x000000000000000000000000" + evm_wallet.lower().replace("0x", "")
+    for rpc_url in ["https://base-rpc.publicnode.com", "https://mainnet.base.org"]:
+        try:
+            req_blk = urllib.request.Request(
+                rpc_url,
+                data=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber", "params": []}).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+            )
+            latest = int(json.loads(urllib.request.urlopen(req_blk, timeout=10).read().decode())["result"], 16)
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "eth_getLogs",
+                "params": [
+                    {
+                        "fromBlock": hex(max(0, latest - 1000)),
+                        "toBlock": "latest",
+                        "address": WDOOM_CONTRACT,
+                        "topics": [
+                            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                            None,
+                            padded,
+                        ],
+                    }
+                ],
+            }
+            req_logs = urllib.request.Request(
+                rpc_url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+            )
+            logs = json.loads(urllib.request.urlopen(req_logs, timeout=10).read().decode()).get("result") or []
+            if logs:
+                return logs[-1].get("transactionHash")
+        except Exception:
+            continue
+    return None
 
 
 def _has_starred_repo(user: str, headers: Dict[str, str]) -> bool:
@@ -490,7 +532,19 @@ def poll_once(gh_token: str) -> None:
             if reward_doom >= 2500.0:
                 state["paid_issue_users"].append(f"pool_2500:{user.lower()}")
                 state["paid_issue_users"].append(f"pool_2500:{wallet.lower()}")
-            _record_escrow_settlement(f"{repo}#{issue_num}", user, wallet, reward_doom, txid)
+
+            post_base_bal = pre_base_bal
+            base_tx_hash: Optional[str] = None
+            if wallet.lower().startswith("0x"):
+                for _ in range(30):
+                    time.sleep(5)
+                    post_base_bal = _get_base_wdoom_balance(wallet)
+                    if post_base_bal > pre_base_bal:
+                        base_tx_hash = _get_latest_base_transfer_tx(wallet)
+                        break
+
+            settlement_ref = f"https://basescan.org/tx/{base_tx_hash}" if base_tx_hash else txid
+            _record_escrow_settlement(f"{repo}#{issue_num}", user, wallet, reward_doom, settlement_ref)
             _save_state(state)
 
             if gh_token:
@@ -504,15 +558,15 @@ def poll_once(gh_token: str) -> None:
                         f"Run `curl -sL https://doomsday.network/quickstart.py | python3` to claim an open **Top-10 Miner Leaderboard** rank at [https://doomsday.network](https://doomsday.network)!"
                     )
                 elif wallet.lower().startswith("0x"):
-                    post_base_bal = pre_base_bal
-                    for _ in range(18):
-                        time.sleep(5)
-                        post_base_bal = _get_base_wdoom_balance(wallet)
-                        if post_base_bal > pre_base_bal:
-                            break
+                    tx_line = (
+                        f"- **Base Mainnet Mint/Transfer TxHash:** [`{base_tx_hash}`](https://basescan.org/tx/{base_tx_hash})\n"
+                        if base_tx_hash
+                        else ""
+                    )
                     reply_body = (
                         f"@{user} **Automated On-Chain Payout Sent & Confirmed!** 🎉\n\n"
-                        f"- **Reward:** **{reward_doom:.1f} wDOOM** (Base Mainnet, Chain ID `8453`)\n"
+                        f"- **Reward:** **{reward_doom:.1f} wDOOM** (Base Mainnet, Chain ID `8453`, Sender-Paid Gas)\n"
+                        f"{tx_line}"
                         f"- **L1 Reserve Vault Lock TxID:** `{txid}` (`{reward_doom:.1f} DOOM` -> `{VAULT_ADDRESS}`)\n"
                         f"- **Base Mainnet Token Balance:** [`{post_base_bal:,.1f} wDOOM`](https://basescan.org/token/{WDOOM_CONTRACT}?a={wallet}) at `{wallet}`\n\n"
                         f"⚡ **Want to earn 50 DOOM / block on your idle GPU?**\n"

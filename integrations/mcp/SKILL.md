@@ -44,6 +44,15 @@ python3 integrations/mcp/doomsday_mcp.py worker <doom1_address>
 # Claim free onboarding DOOM from live faucet
 python3 integrations/mcp/doomsday_mcp.py claim <doom1_address>
 
+# Generate or load a sovereign local secp256k1 DOOM wallet (wallet.json)
+python3 integrations/mcp/doomsday_mcp.py wallet-gen wallet.json
+
+# Sign locally with secp256k1 ECDSA and broadcast a Layer-1 UTXO payment (0.001 DOOM miner fee)
+python3 integrations/mcp/doomsday_mcp.py send <to_doom1_address> 250 "A2A:task_ref" wallet.json
+
+# Verify an on-chain Layer-1 payment by txid
+python3 integrations/mcp/doomsday_mcp.py verify-tx <txid> <recipient_doom1_address> 250
+
 # Start as a standard JSON-RPC 2.0 MCP server over stdio
 python3 integrations/mcp/doomsday_mcp.py --mcp
 ```
@@ -58,6 +67,9 @@ python3 integrations/mcp/doomsday_mcp.py --mcp
 6. `claim_faucet`: Dispense free onboarding DOOM tokens from the faucet to bootstrap an agent wallet.
 7. `verify_miner_worker`: Inspect live hashrate, accepted pool shares, and online status of a worker.
 8. `format_escrow_badge`: Generate an official GitHub markdown verification badge with live shields.io link.
+9. `generate_doom_wallet`: Generate or load a sovereign client-side `secp256k1` DOOM Layer-1 wallet (`wallet.json`).
+10. `send_doom_l1`: Sign locally with `secp256k1` ECDSA and broadcast a native Doomsday Layer-1 UTXO payment with a `0.001 DOOM` miner fee paid to PoW block miners.
+11. `verify_l1_payment`: Cryptographically verify on-chain that a Layer-1 `txid` paid `recipient_address` at least `min_amount_doom` DOOM.
 
 ### MCP Server Configuration (`mcp_config.json`)
 

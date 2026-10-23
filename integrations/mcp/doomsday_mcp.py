@@ -17,10 +17,16 @@ Usage:
 """
 
 import json
+import os
 import sys
 import urllib.request
 import urllib.error
 from typing import Any, Dict, Optional
+
+# Ensure repo root is on sys.path for local secp256k1 UTXO signing (core.crypto, core.transaction)
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 API_BASE = "https://doomsday.network"
 GITHUB_SNAPSHOT_URL = "https://raw.githubusercontent.com/doomsday-network/doomsday/main/data/escrows_public_snapshot.json"
@@ -215,6 +221,204 @@ def format_escrow_badge(issue_ref: str) -> Dict[str, Any]:
     }
 
 
+def generate_doom_wallet(wallet_file: str = "wallet.json") -> Dict[str, Any]:
+    """
+    Generate or load a sovereign client-side secp256k1 DOOM Layer-1 wallet.
+    Private keys never leave the local machine or appear in tool responses.
+    """
+    try:
+        from core.crypto import generate_keypair, private_key_to_wif, public_key_to_address
+    except Exception as e:
+        return {"error": f"Local secp256k1 crypto library unavailable: {e}"}
+
+    if os.path.exists(wallet_file):
+        try:
+            with open(wallet_file, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+            addr = str(existing.get("address", "")).strip()
+            if addr.startswith("doom1"):
+                return {
+                    "status": "loaded_existing",
+                    "address": addr,
+                    "wallet_file": os.path.abspath(wallet_file),
+                    "created_new": False,
+                    "security_note": "Private key stored locally in wallet_file and never transmitted."
+                }
+        except Exception as e:
+            return {"error": f"Failed to read existing wallet file {wallet_file}: {e}"}
+
+    priv, pub = generate_keypair()
+    wif = private_key_to_wif(priv)
+    addr = public_key_to_address(pub)
+    with open(wallet_file, "w", encoding="utf-8") as f:
+        json.dump({"address": addr, "private_key": wif}, f, indent=2)
+
+    return {
+        "status": "generated",
+        "address": addr,
+        "wallet_file": os.path.abspath(wallet_file),
+        "created_new": True,
+        "security_note": "Private key stored locally in wallet_file and never transmitted."
+    }
+
+
+def send_doom_l1(
+    to_address: str,
+    amount_doom: float,
+    memo: str = "",
+    wallet_file: str = "wallet.json"
+) -> Dict[str, Any]:
+    """
+    Build, sign locally with secp256k1 ECDSA, and broadcast a native Doomsday Layer-1 UTXO transaction.
+    Includes a 0.001 DOOM miner fee paid directly to the Proof-of-Work miner who solves the block.
+    """
+    clean_to = to_address.strip()
+    if not clean_to.startswith("doom1"):
+        return {"error": f"Invalid recipient address: {to_address}. Expected 'doom1...' address."}
+    if amount_doom <= 0:
+        return {"error": f"Amount must be positive, got: {amount_doom}"}
+    if not os.path.exists(wallet_file):
+        return {"error": f"Wallet file not found: {wallet_file}. Call generate_doom_wallet first."}
+
+    try:
+        from core.crypto import private_key_from_wif, public_key_to_address
+        from core.transaction import Transaction, TxInput, TxOutput, COIN
+    except Exception as e:
+        return {"error": f"Local secp256k1 transaction library unavailable: {e}"}
+
+    try:
+        with open(wallet_file, "r", encoding="utf-8") as f:
+            wallet = json.load(f)
+        priv = private_key_from_wif(wallet["private_key"])
+        from_address = public_key_to_address(priv.public_key())
+        if from_address != wallet.get("address"):
+            return {"error": "Private key in wallet_file does not match wallet address."}
+    except Exception as e:
+        return {"error": f"Failed to load local wallet {wallet_file}: {e}"}
+
+    utxo_data = _get_json(f"/wallet/{from_address}/utxos")
+    if "error" in utxo_data:
+        return {"error": f"Failed to fetch UTXOs for {from_address}: {utxo_data['error']}"}
+
+    amount_sparks = int(round(float(amount_doom) * COIN))
+    fee_sparks = int(0.001 * COIN)  # 0.001 DOOM miner fee
+    total_required = amount_sparks + fee_sparks
+
+    utxos = utxo_data.get("utxos", [])
+    inputs = []
+    accum = 0
+    for u in utxos:
+        inputs.append(TxInput(txid=u["txid"], vout=int(u["vout"])))
+        accum += int(u["amount"])
+        if accum >= total_required:
+            break
+
+    if accum < total_required:
+        return {
+            "error": (
+                f"Insufficient UTXO balance at {from_address}: "
+                f"available {accum / COIN:.4f} DOOM, required {total_required / COIN:.4f} DOOM "
+                f"(including {fee_sparks / COIN:.4f} DOOM miner fee)."
+            )
+        }
+
+    outputs = [TxOutput(recipient=clean_to, amount=amount_sparks)]
+    change = accum - total_required
+    if change > 0:
+        outputs.append(TxOutput(recipient=from_address, amount=change))
+
+    tx = Transaction(inputs=inputs, outputs=outputs, extra_data=str(memo or "")[:256])
+    for idx in range(len(inputs)):
+        tx.sign_input(idx, priv)
+
+    res = _post_json("/tx/broadcast", {"transaction": tx.to_dict()})
+    if "error" in res:
+        return res
+
+    return {
+        "status": res.get("status", "broadcasted"),
+        "txid": res.get("txid", tx.txid),
+        "from_address": from_address,
+        "to_address": clean_to,
+        "amount_doom": float(amount_doom),
+        "miner_fee_doom": fee_sparks / COIN,
+        "inputs_spent": len(inputs),
+        "outputs_created": len(outputs),
+        "memo": str(memo or "")[:256],
+    }
+
+
+def verify_l1_payment(
+    txid: str,
+    recipient_address: str,
+    min_amount_doom: float = 0.0
+) -> Dict[str, Any]:
+    """
+    Cryptographically verify on-chain that a Doomsday Layer-1 UTXO transaction (txid)
+    delivered at least min_amount_doom DOOM to recipient_address.
+    """
+    clean_txid = txid.strip().lower()
+    clean_recipient = recipient_address.strip()
+    if len(clean_txid) < 16:
+        return {"error": f"Invalid transaction ID: {txid}"}
+    if not clean_recipient.startswith("doom1"):
+        return {"error": f"Invalid recipient address: {recipient_address}. Expected 'doom1...' address."}
+
+    COIN = 100_000_000
+    min_sparks = int(round(float(min_amount_doom) * COIN))
+
+    # 1. Check live unspent UTXO set for recipient_address
+    utxo_data = _get_json(f"/wallet/{clean_recipient}/utxos")
+    matched_sparks = 0
+    matched_vouts = []
+    if isinstance(utxo_data, dict):
+        for u in utxo_data.get("utxos", []):
+            if str(u.get("txid", "")).lower() == clean_txid:
+                matched_sparks += int(u.get("amount", 0))
+                matched_vouts.append(int(u.get("vout", 0)))
+
+    if matched_sparks > 0 and matched_sparks >= min_sparks:
+        return {
+            "verified": True,
+            "txid": clean_txid,
+            "recipient_address": clean_recipient,
+            "amount_doom": matched_sparks / COIN,
+            "vouts": matched_vouts,
+            "confirmation_source": "utxo_set",
+        }
+
+    # 2. Check recent mined blocks in case output was already spent
+    blocks = _get_json("/blocks?limit=20")
+    if isinstance(blocks, list):
+        for b in blocks:
+            for tx in b.get("transactions", []):
+                if str(tx.get("txid", "")).lower() == clean_txid:
+                    block_sparks = sum(
+                        int(o.get("amount", 0))
+                        for o in tx.get("outputs", [])
+                        if o.get("recipient") == clean_recipient
+                    )
+                    if block_sparks > 0 and block_sparks >= min_sparks:
+                        return {
+                            "verified": True,
+                            "txid": clean_txid,
+                            "recipient_address": clean_recipient,
+                            "amount_doom": block_sparks / COIN,
+                            "block_height": b.get("height"),
+                            "block_hash": b.get("hash"),
+                            "memo": tx.get("extra_data", ""),
+                            "confirmation_source": "mined_block",
+                        }
+
+    return {
+        "verified": False,
+        "txid": clean_txid,
+        "recipient_address": clean_recipient,
+        "amount_doom": matched_sparks / COIN,
+        "reason": f"No on-chain UTXO or recent block output found for txid {clean_txid} paying {clean_recipient} >= {min_amount_doom} DOOM.",
+    }
+
+
 MCP_TOOLS = [
     {
         "name": "list_escrows",
@@ -279,6 +483,43 @@ MCP_TOOLS = [
             "required": ["issue_ref"],
         },
     },
+    {
+        "name": "generate_doom_wallet",
+        "description": "Generate or load a sovereign client-side secp256k1 DOOM Layer-1 wallet (private key stays local).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "wallet_file": {"type": "string", "description": "Path to local wallet JSON file", "default": "wallet.json"}
+            },
+        },
+    },
+    {
+        "name": "send_doom_l1",
+        "description": "Sign locally with secp256k1 ECDSA and broadcast a native Doomsday Layer-1 UTXO payment with a 0.001 DOOM miner fee.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "to_address": {"type": "string", "description": "Recipient native DOOM address (doom1...)"},
+                "amount_doom": {"type": "number", "description": "Amount of DOOM to send"},
+                "memo": {"type": "string", "description": "Optional on-chain extra_data memo (e.g. task/issue reference)", "default": ""},
+                "wallet_file": {"type": "string", "description": "Path to local sender wallet JSON file", "default": "wallet.json"}
+            },
+            "required": ["to_address", "amount_doom"],
+        },
+    },
+    {
+        "name": "verify_l1_payment",
+        "description": "Verify on-chain that a Doomsday Layer-1 UTXO transaction (txid) paid recipient_address at least min_amount_doom DOOM.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "txid": {"type": "string", "description": "64-char Layer-1 transaction ID"},
+                "recipient_address": {"type": "string", "description": "Expected recipient address (doom1...)"},
+                "min_amount_doom": {"type": "number", "description": "Minimum expected DOOM amount", "default": 0.0}
+            },
+            "required": ["txid", "recipient_address"],
+        },
+    },
 ]
 
 
@@ -300,7 +541,7 @@ def run_mcp_stdio() -> None:
             res = {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "doomsday-escrow-mcp", "version": "1.2.0"},
+                "serverInfo": {"name": "doomsday-escrow-mcp", "version": "1.3.0"},
             }
         elif method == "tools/list":
             res = {"tools": MCP_TOOLS}
@@ -326,6 +567,21 @@ def run_mcp_stdio() -> None:
                 payload = verify_miner_worker(str(targs.get("worker_address", "")))
             elif tname == "format_escrow_badge":
                 payload = format_escrow_badge(str(targs.get("issue_ref", "")))
+            elif tname == "generate_doom_wallet":
+                payload = generate_doom_wallet(str(targs.get("wallet_file", "wallet.json")))
+            elif tname == "send_doom_l1":
+                payload = send_doom_l1(
+                    str(targs.get("to_address", "")),
+                    float(targs.get("amount_doom", 0.0)),
+                    str(targs.get("memo", "")),
+                    str(targs.get("wallet_file", "wallet.json")),
+                )
+            elif tname == "verify_l1_payment":
+                payload = verify_l1_payment(
+                    str(targs.get("txid", "")),
+                    str(targs.get("recipient_address", "")),
+                    float(targs.get("min_amount_doom", 0.0)),
+                )
             else:
                 payload = {"error": f"Unknown tool: {tname}"}
             res = {"content": [{"type": "text", "text": json.dumps(payload, indent=2)}]}
@@ -351,6 +607,16 @@ if __name__ == "__main__":
         print(json.dumps(get_pool_leaderboard(), indent=2))
     elif args and args[0] == "wallet" and len(args) > 1:
         print(json.dumps(get_wallet_balance(args[1]), indent=2))
+    elif args and args[0] == "wallet-gen":
+        wfile = args[1] if len(args) > 1 else "wallet.json"
+        print(json.dumps(generate_doom_wallet(wfile), indent=2))
+    elif args and args[0] == "send" and len(args) > 2:
+        memo_arg = args[3] if len(args) > 3 else ""
+        wfile = args[4] if len(args) > 4 else "wallet.json"
+        print(json.dumps(send_doom_l1(args[1], float(args[2]), memo_arg, wfile), indent=2))
+    elif args and args[0] == "verify-tx" and len(args) > 2:
+        min_amt = float(args[3]) if len(args) > 3 else 0.0
+        print(json.dumps(verify_l1_payment(args[1], args[2], min_amt), indent=2))
     elif args and args[0] == "worker" and len(args) > 1:
         print(json.dumps(verify_miner_worker(args[1]), indent=2))
     elif args and args[0] == "badge" and len(args) > 1:

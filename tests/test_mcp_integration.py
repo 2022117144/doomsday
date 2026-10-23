@@ -137,6 +137,63 @@ class TestDoomsdayMCPTools(unittest.TestCase):
         self.assertTrue(res["is_active"])
         self.assertEqual(res["round_shares"], 1)
 
+    @patch("integrations.mcp.doomsday_mcp._post_json")
+    @patch("integrations.mcp.doomsday_mcp._get_json")
+    def test_generate_and_send_doom_l1_signed(self, mock_get, mock_post):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            wpath = os.path.join(tmpdir, "test_agent_wallet.json")
+            gen = doomsday_mcp.generate_doom_wallet(wpath)
+            self.assertEqual(gen["status"], "generated")
+            self.assertTrue(gen["created_new"])
+            self.assertTrue(gen["address"].startswith("doom1"))
+            self.assertNotIn("private_key", gen)
+
+            # Second call loads existing without overwriting
+            gen2 = doomsday_mcp.generate_doom_wallet(wpath)
+            self.assertEqual(gen2["status"], "loaded_existing")
+            self.assertEqual(gen2["address"], gen["address"])
+
+            mock_get.return_value = {
+                "address": gen["address"],
+                "utxos": [{"txid": "a" * 64, "vout": 0, "amount": 500_00000000}]
+            }
+            mock_post.return_value = {
+                "status": "broadcasted",
+                "txid": "b" * 64,
+                "inputs": 1,
+                "outputs": 2,
+            }
+
+            recipient = "doom192e6ba55224befad203145a78b4d594a694a3e8b588d5d47"
+            tx_res = doomsday_mcp.send_doom_l1(recipient, 250.0, memo="A2A:doomsday#11", wallet_file=wpath)
+            self.assertEqual(tx_res["status"], "broadcasted")
+            self.assertEqual(tx_res["from_address"], gen["address"])
+            self.assertEqual(tx_res["to_address"], recipient)
+            self.assertEqual(tx_res["amount_doom"], 250.0)
+            self.assertEqual(tx_res["miner_fee_doom"], 0.001)
+            self.assertEqual(tx_res["outputs_created"], 2)
+
+            # Verify broadcast payload contained real ECDSA signature and pubkey
+            called_path, called_payload = mock_post.call_args[0]
+            self.assertEqual(called_path, "/tx/broadcast")
+            tx_dict = called_payload["transaction"]
+            self.assertTrue(len(tx_dict["inputs"][0]["signature"]) > 64)
+            self.assertTrue(len(tx_dict["inputs"][0]["pubkey_hex"]) == 66)
+
+    @patch("integrations.mcp.doomsday_mcp._get_json")
+    def test_verify_l1_payment(self, mock_get):
+        txid = "c" * 64
+        recipient = "doom192e6ba55224befad203145a78b4d594a694a3e8b588d5d47"
+        mock_get.return_value = {
+            "address": recipient,
+            "utxos": [{"txid": txid, "vout": 0, "amount": 250_00000000}]
+        }
+        v = doomsday_mcp.verify_l1_payment(txid, recipient, min_amount_doom=200.0)
+        self.assertTrue(v["verified"])
+        self.assertEqual(v["amount_doom"], 250.0)
+        self.assertEqual(v["confirmation_source"], "utxo_set")
+
 
 class TestDoomsdayMCPProtocol(unittest.TestCase):
     """Test standard JSON-RPC 2.0 stdio handling for the Model Context Protocol."""

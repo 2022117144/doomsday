@@ -1,0 +1,26 @@
+name: "Doomsday Proof-of-Escrow & Bounty Auditor"
+description: "Verify cryptographic L1 UTXO Proof-of-Escrow collateral and Base Mainnet wDOOM settlement history for GitHub bounties."
+author: "doomsday-network"
+branding:
+  icon: "shield"
+  color: "orange"
+inputs:
+  command:
+    description: "Command to run: 'audit', 'list', or 'verify'"
+    required: false
+    default: "audit"
+  issue_ref:
+    description: "GitHub issue reference (e.g. doomsday-network/doomsday#11) when command is 'verify'"
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - name: Run Doomsday Proof-of-Escrow Auditor
+      shell: bash
+      run: |
+        if [ "${{ inputs.command }}" = "verify" ] && [ -n "${{ inputs.issue_ref }}" ]; then
+          python3 "${{ github.action_path }}/integrations/mcp/doomsday_mcp.py" verify "${{ inputs.issue_ref }}"
+        else
+          python3 "${{ github.action_path }}/integrations/mcp/doomsday_mcp.py" "${{ inputs.command }}"
+        fi

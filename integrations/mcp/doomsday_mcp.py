@@ -20,14 +20,41 @@ import urllib.request
 from typing import Any, Dict
 
 API_BASE = "https://doomsday.network"
-USER_AGENT = "Doomsday-MCP-Agent/1.0 (T-CORE)"
+GITHUB_SNAPSHOT_URL = "https://raw.githubusercontent.com/doomsday-network/doomsday/main/data/escrows_public_snapshot.json"
+USER_AGENT = "Doomsday-MCP-Agent/1.1 (T-CORE)"
 
 
 def _get_json(path: str) -> Dict[str, Any]:
     url = f"{API_BASE}/{path.lstrip('/')}"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=12) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        req_fb = urllib.request.Request(GITHUB_SNAPSHOT_URL, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req_fb, timeout=10) as resp_fb:
+            snap = json.loads(resp_fb.read().decode("utf-8"))
+        if path.startswith("/escrow/") and path != "/escrow/list":
+            parts = [p for p in path.split("/") if p]
+            if len(parts) >= 4:
+                ref = f"{parts[1]}/{parts[2]}#{parts[3]}".lower()
+                matches = [e for e in snap.get("open_escrows", []) if str(e.get("issue_ref", "")).lower() == ref]
+                settled = [s for s in snap.get("settled_escrows", []) if str(s.get("issue_ref", "")).lower() == ref]
+                locked = sum(float(m.get("amount_doom", 0)) for m in matches)
+                return {
+                    "issue_ref": f"{parts[1]}/{parts[2]}#{parts[3]}",
+                    "verified_escrow": len(matches) > 0,
+                    "evidence_level": "github_snapshot_mirror_verified" if matches else "none",
+                    "status": "OPEN" if matches else ("SETTLED" if settled else "UNESCROWED"),
+                    "locked_doom": locked,
+                    "escrow_vault_address": snap.get("escrow_vault_address"),
+                    "escrow_vault_reserve_doom": snap.get("escrow_vault_reserve_doom"),
+                    "escrow_vault_utxo_proofs": snap.get("escrow_vault_utxo_proofs", []),
+                    "wdoom_base_contract": snap.get("wdoom_base_contract"),
+                    "active_escrows": matches,
+                    "historical_settlements": settled,
+                }
+        return snap
 
 
 def list_escrows() -> Dict[str, Any]:

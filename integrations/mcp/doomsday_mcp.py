@@ -341,7 +341,7 @@ def run_mcp_stdio() -> None:
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if "--mcp" in args:
+    if "--mcp" in args or (not args and not sys.stdin.isatty()):
         run_mcp_stdio()
     elif args and args[0] == "verify" and len(args) > 1:
         print(json.dumps(verify_issue_escrow(args[1]), indent=2))

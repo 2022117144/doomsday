@@ -26,7 +26,6 @@ VAULT_ADDRESS = "doom1vault000000000000000000000000000000"
 WDOOM_CONTRACT = "0x623c84A5E04bF715018203334b0eFE41696eBC3E"
 
 WATCHED_ISSUES = [
-    ("doomsday-network/doomsday", 1, 500.0),
     ("doomsday-network/doomsday", 2, 250.0),
     ("doomsday-network/doomsday", 3, 500.0),
     ("doomsday-network/doomsday", 4, 500.0),
@@ -39,6 +38,16 @@ WATCHED_ISSUES = [
     ("doomsday-network/bounty-guard", 4, 2500.0),
     ("doomsday-network/bounty-guard", 5, 1500.0),
 ]
+
+# Issues that MUST NOT auto-pay without explicit maintainer `/doom-pay` verification
+MANUAL_REVIEW_REQUIRED_ISSUES = {
+    ("doomsday-network/doomsday", 7),
+    ("doomsday-network/doomsday", 9),
+    ("doomsday-network/doomsday", 10),
+    ("doomsday-network/doomsday", 11),
+    ("doomsday-network/bounty-guard", 4),
+    ("doomsday-network/bounty-guard", 5),
+}
 
 DOOM_REGEX = re.compile(r"\b(doom1[a-fA-F0-9]{48})\b")
 EVM_REGEX = re.compile(r"\b(0x[a-fA-F0-9]{40})\b")
@@ -106,6 +115,14 @@ IGNORED_DOOM_ADDRESSES = {
     "doom11a24b41c22883ea75906a157d6d7a334cc2554181b741afe",
     "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de",
     "doom12c148fe7e3b07ca9d29af1c59106c6b0866eaec79eb14919",
+    # Public Top-10 leaderboard miner wallets (cannot be borrowed as proof by third parties):
+    "doom1fa46f5dbbfd93879c229a6d4ff2925b5b0adc92e96b3405d",
+    "doom192e6ba55224befad203145a78b4d594a694a3e8b588d5d47",
+    "doom1dc419770217705275d751e6cebaa4e675cd2ebc800588a9e",
+    "doom172442b135f8ed11188c433cd6cf96b26fb9a3e221619b914",
+    "doom184628c55f82a6df9d09775ace095bf55464098fb2e99c3c0",
+    "doom151336b1bcc356453cf2fb215909917e24be4930a31a3ab36",
+    "doom1187186feace4004e684b8e50d2afc0bde09ba525c2fa9579",
 }
 
 
@@ -303,10 +320,18 @@ def _has_forked_repo(user: str, headers: Dict[str, str]) -> bool:
         return False
 
 
-def _has_verified_pool_activity(body: str) -> bool:
+def _has_verified_pool_activity(
+    body: str,
+    existing_keys: Optional[List[str]] = None,
+    issue_prefix: str = "",
+) -> Optional[str]:
+    """Return the verified doom1... miner address (or None) after checking it has not been used before."""
+    used = {k.lower() for k in (existing_keys or [])}
     for cand in DOOM_REGEX.findall(body):
         addr = cand.lower()
         if addr in IGNORED_DOOM_ADDRESSES:
+            continue
+        if f"pool_miner:{addr}" in used or (issue_prefix and f"{issue_prefix.lower()}:{addr}" in used):
             continue
         try:
             req = urllib.request.Request(f"{NODE_API}/pool/worker/{addr}")
@@ -317,10 +342,10 @@ def _has_verified_pool_activity(body: str) -> bool:
                 or w.get("total_paid_doom", 0.0) > 0.0
                 or w.get("hashrate_mhs", 0.0) > 0.0
             ):
-                return True
+                return addr
         except Exception:
             pass
-    return False
+    return None
 
 
 PRIVCLAIM_REGEX = re.compile(r"PRIVCLAIM:([0-9a-fA-F]{64,512})")
@@ -410,6 +435,10 @@ def poll_once(gh_token: str) -> None:
                 if target_wallet:
                     txid = _send_onchain_reward(target_wallet, pay_amt)
                     if txid:
+                        state.setdefault("paid_users", []).append(target_user)
+                        state.setdefault("paid_wallets", []).append(target_wallet.lower())
+                        state.setdefault("paid_issue_users", []).append(f"{repo}#{issue_num}:{target_user.lower()}")
+                        state["paid_issue_users"].append(f"{repo}#{issue_num}:{target_wallet.lower()}")
                         _record_escrow_settlement(f"{repo}#{issue_num}", target_user, target_wallet, pay_amt, txid)
                         _save_state(state)
                         if gh_token:
@@ -433,34 +462,78 @@ def poll_once(gh_token: str) -> None:
                                 pass
                 continue
 
+            # High-value and deliverable bounties (#7, #9, #10, #11, bounty-guard#4, bounty-guard#5)
+            # strictly require maintainer verification via `/doom-pay @username`.
+            if (repo, issue_num) in MANUAL_REVIEW_REQUIRED_ISSUES:
+                if user.lower() != "doomsday-network":
+                    print(
+                        f"[AirdropBot] Holding @{user} submission on {repo}#{issue_num} ({reward_doom} DOOM) for maintainer /doom-pay review"
+                    )
+                _save_state(state)
+                continue
+
+            existing_keys = {k.lower() for k in state.get("paid_issue_users", [])}
+            existing_paid_users = {u.lower() for u in state.get("paid_users", [])}
+            existing_paid_wallets = {w.lower() for w in state.get("paid_wallets", [])}
+
             issue_user_key = f"{repo}#{issue_num}:{user.lower()}"
-            if user.lower() == "doomsday-network" or issue_user_key in [
-                k.lower() for k in state.get("paid_issue_users", [])
-            ]:
+            if (
+                user.lower() == "doomsday-network"
+                or issue_user_key in existing_keys
+                or user.lower() in existing_paid_users
+            ):
                 _save_state(state)
                 continue
 
             wallet = _extract_user_wallet(body)
             issue_wallet_key = f"{repo}#{issue_num}:{(wallet or '').lower()}"
-            if not wallet or issue_wallet_key in [
-                k.lower() for k in state.get("paid_issue_users", [])
-            ]:
+            if (
+                not wallet
+                or issue_wallet_key in existing_keys
+                or wallet.lower() in existing_paid_wallets
+            ):
+                _save_state(state)
+                continue
+
+            # Extract any doom1... addresses referenced in the comment and ensure none are borrowed/reused
+            comment_doom_addrs = [
+                cand.lower()
+                for cand in DOOM_REGEX.findall(body)
+                if cand.lower() not in IGNORED_DOOM_ADDRESSES
+            ]
+            if any(
+                d_addr in existing_paid_wallets
+                or f"pool_miner:{d_addr}" in existing_keys
+                or f"{repo.lower()}#{issue_num}:{d_addr}" in existing_keys
+                for d_addr in comment_doom_addrs
+            ):
+                print(f"[AirdropBot] Rejecting reused/borrowed doom1 address from @{user} on {repo}#{issue_num}")
                 _save_state(state)
                 continue
 
             body_low = body.lower()
 
+            if repo == "doomsday-network/doomsday" and issue_num == 2:
+                if not (_has_starred_repo(user, headers) or bool(comment_doom_addrs)):
+                    print(f"[AirdropBot] Waiting for @{user} to star repo or include doom1 address on #2")
+                    _save_state(state)
+                    continue
+
             if repo == "doomsday-network/doomsday" and issue_num in (3, 4):
-                if not any(kw in body_low for kw in ("h/s", "kh/s", "mh/s", "doomhash", "reference rate", "architecture:")):
-                    print(f"[AirdropBot] Skipping non-benchmark comment by @{user} on #{issue_num}")
+                has_bench = any(
+                    kw in body_low for kw in ("h/s", "kh/s", "mh/s", "doomhash", "reference rate", "architecture:")
+                )
+                if not (has_bench and comment_doom_addrs):
+                    print(f"[AirdropBot] Skipping non-benchmark or missing-doom1 comment by @{user} on #{issue_num}")
                     _save_state(state)
                     continue
 
             if repo == "doomsday-network/bounty-guard" and issue_num == 1:
                 has_bench = any(kw in body_low for kw in ("h/s", "kh/s", "mh/s", "reference rate"))
-                has_repo_report = ("/" in body and len(body.strip()) >= 60 and "requesting airdrop" not in body_low)
-                if not (has_bench or has_repo_report):
-                    print(f"[AirdropBot] Skipping empty/generic comment by @{user} on bounty-guard#1")
+                if not (has_bench and comment_doom_addrs):
+                    print(
+                        f"[AirdropBot] Holding non-quickstart comment by @{user} on bounty-guard#1 for maintainer /doom-pay review"
+                    )
                     _save_state(state)
                     continue
 
@@ -472,44 +545,14 @@ def poll_once(gh_token: str) -> None:
                     _save_state(state)
                     continue
 
-            if repo == "doomsday-network/doomsday" and issue_num == 9:
-                if not (_has_starred_repo(user, headers) and _has_forked_repo(user, headers) and _has_verified_pool_activity(body)):
-                    print(f"[AirdropBot] Waiting for @{user} to star+fork+mine pool share before paying #9")
-                    if cid in state["processed_comments"]:
-                        state["processed_comments"].remove(cid)
-                    _save_state(state)
-                    continue
-
-            if repo == "doomsday-network/doomsday" and issue_num == 10:
-                if not _has_verified_pool_activity(body):
-                    print(f"[AirdropBot] Waiting for @{user} to mine 1+ pool share before paying #10")
-                    _save_state(state)
-                    continue
-
-            if repo == "doomsday-network/doomsday" and issue_num == 11:
-                has_deliverable = (
-                    ("```" in body and ("def " in body or "name:" in body_low) and len(body) >= 400)
-                    or ("github.com/" in body_low and ("/pull/" in body_low or "/tree/" in body_low or "/blob/" in body_low or "gist.github.com" in body_low))
+            verified_miner_addr: Optional[str] = None
+            if reward_doom >= 1000.0:
+                verified_miner_addr = _has_verified_pool_activity(
+                    body,
+                    state.get("paid_issue_users", []),
+                    f"{repo}#{issue_num}",
                 )
-                if not has_deliverable or "requesting a specific task" in body_low:
-                    print(f"[AirdropBot] Waiting for actual code/PR deliverable from @{user} on #11")
-                    _save_state(state)
-                    continue
-
-            if repo == "doomsday-network/bounty-guard" and issue_num == 5:
-                if not (body.count("|") >= 12 and "safe_with_escrow" in body_low and "quarantine" in body_low):
-                    print(f"[AirdropBot] Waiting for 3-row classification table from @{user} on bounty-guard#5")
-                    _save_state(state)
-                    continue
-
-            if reward_doom == 2500.0:
-                p_u = f"pool_2500:{user.lower()}"
-                p_w = f"pool_2500:{wallet.lower()}"
-                existing_keys = [k.lower() for k in state.get("paid_issue_users", [])]
-                if p_u in existing_keys or p_w in existing_keys or user.lower() == "ramgox":
-                    _save_state(state)
-                    continue
-                if not _has_verified_pool_activity(body):
+                if not verified_miner_addr:
                     print(f"[AirdropBot] Skipping unverified pool claim by @{user} on {repo}#{issue_num}")
                     _save_state(state)
                     continue
@@ -529,6 +572,14 @@ def poll_once(gh_token: str) -> None:
             state["paid_wallets"].append(wallet.lower())
             state.setdefault("paid_issue_users", []).append(issue_user_key)
             state["paid_issue_users"].append(issue_wallet_key)
+            for d_addr in comment_doom_addrs:
+                state["paid_wallets"].append(d_addr)
+                state["paid_issue_users"].append(f"{repo}#{issue_num}:{d_addr}")
+                state["paid_issue_users"].append(f"pool_miner:{d_addr}")
+            if verified_miner_addr:
+                state["paid_wallets"].append(verified_miner_addr)
+                state["paid_issue_users"].append(f"{repo}#{issue_num}:{verified_miner_addr}")
+                state["paid_issue_users"].append(f"pool_miner:{verified_miner_addr}")
             if reward_doom >= 2500.0:
                 state["paid_issue_users"].append(f"pool_2500:{user.lower()}")
                 state["paid_issue_users"].append(f"pool_2500:{wallet.lower()}")

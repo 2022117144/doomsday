@@ -67,6 +67,10 @@ def post_badge_comment(token: str, owner: str, repo: str, issue_number: int, bad
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
     issue_num_raw = os.environ.get("INPUT_ISSUE_NUMBER", "").strip()
     repo_full = os.environ.get("INPUT_REPOSITORY", "").strip()
     api_url = os.environ.get("INPUT_API_URL", "https://doomsday.network").strip()
@@ -89,10 +93,16 @@ def main() -> int:
 
     data = query_escrow(api_url, owner, repo, issue_number)
     status = data.get("status", "UNVERIFIED")
-    is_verified = bool(data.get("verified", False) or status in ("VERIFIED_RESERVE", "SAFE_WITH_ESCROW"))
-    collateral = float(data.get("collateral_amount", data.get("collateral_doom", data.get("reward_doom", 0.0))))
+    is_verified = bool(
+        data.get("verified_escrow", False)
+        or data.get("verified", False)
+        or status in ("OPEN", "VERIFIED_RESERVE", "SAFE_WITH_ESCROW")
+    )
+    collateral = float(
+        data.get("locked_doom", data.get("collateral_amount", data.get("collateral_doom", data.get("reward_doom", 0.0))))
+    )
     escrow_txid = str(data.get("txid", data.get("settlement_txid", "N/A")))
-    vault_addr = str(data.get("vault_address", "doom1vault000000000000000000000000000000"))
+    vault_addr = str(data.get("escrow_vault_address", data.get("vault_address", "doom1caea0957fb471c2b83940cc2feb421abad938dfbdef662de")))
 
     # Set Outputs
     set_output("is-verified", "true" if is_verified else "false")

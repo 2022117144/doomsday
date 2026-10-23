@@ -20,7 +20,7 @@ class TestDoomsdayGitHubAction(unittest.TestCase):
         env["INPUT_POST_BADGE_COMMENT"] = "false"
         env["INPUT_FAIL_ON_UNVERIFIED"] = "false"
 
-        res = subprocess.run([sys.executable, self.entrypoint], env=env, capture_output=True, text=True)
+        res = subprocess.run([sys.executable, self.entrypoint], env=env, capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(res.returncode, 0)
         self.assertIn("[OUTPUT] is-verified=", res.stdout)
         self.assertIn("[OUTPUT] status=", res.stdout)
@@ -31,7 +31,7 @@ class TestDoomsdayGitHubAction(unittest.TestCase):
         env["INPUT_ISSUE_NUMBER"] = "not_a_number"
         env["INPUT_REPOSITORY"] = "invalid"
 
-        res = subprocess.run([sys.executable, self.entrypoint], env=env, capture_output=True, text=True)
+        res = subprocess.run([sys.executable, self.entrypoint], env=env, capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(res.returncode, 1)
         self.assertIn("[ERROR]", res.stdout)
 
